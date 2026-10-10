@@ -25,6 +25,7 @@
     --dim: #7C94AD;
     --font: 'DM Sans', system-ui, sans-serif;
     --mono: 'DM Mono', 'SF Mono', monospace;
+    --ride-duration: 3s;
   }
 
   body {
@@ -48,505 +49,332 @@
     padding: 32px 24px;
     gap: 0;
   }
-
-  .join-logo {
-    font-family: var(--mono);
-    font-size: 12px;
-    letter-spacing: 0.1em;
-    color: var(--muted);
-    margin-bottom: 32px;
+  .join-logo { font-size: 64px; margin-bottom: 4px; }
+  .join-title { font-size: 26px; font-weight: 600; color: var(--blue-lt); }
+  .join-sub { color: var(--dim); font-size: 14px; margin-bottom: 40px; }
+  .join-input {
+    width: 100%; padding: 14px 16px;
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 12px; color: var(--text); font-family: var(--font);
+    font-size: 18px; font-weight: 500; text-align: center;
+    outline: none; transition: border-color .2s;
+    -webkit-appearance: none;
   }
-
-  .join-logo span { color: var(--green); }
-
-  #joinScreen h1 {
-    font-size: 26px;
-    font-weight: 600;
-    text-align: center;
-    margin-bottom: 8px;
+  .join-input:focus { border-color: var(--blue); }
+  .join-btn {
+    margin-top: 16px; width: 100%; padding: 15px;
+    background: var(--blue); border: none; border-radius: 12px;
+    color: #000; font-family: var(--font); font-size: 16px; font-weight: 600;
+    cursor: pointer; transition: opacity .2s;
   }
+  .join-btn:active { opacity: .8; }
+  .join-error { color: var(--red); font-size: 13px; margin-top: 8px; min-height: 18px; }
 
-  #joinScreen p {
-    font-size: 14px;
-    color: var(--dim);
-    text-align: center;
-    margin-bottom: 36px;
-    line-height: 1.6;
-  }
-
-  .join-card {
-    width: 100%;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 24px;
-  }
-
-  .join-card label {
-    display: block;
-    font-size: 12px;
-    font-family: var(--mono);
-    color: var(--muted);
-    letter-spacing: 0.08em;
-    margin-bottom: 8px;
-  }
-
-  .join-nums {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 8px;
-    margin-bottom: 20px;
-  }
-
-  .num-btn {
-    aspect-ratio: 1;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--text);
-    font-family: var(--mono);
-    font-size: 16px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background 0.12s, border-color 0.12s, color 0.12s;
-  }
-
-  .num-btn:hover   { background: var(--blue); border-color: var(--blue); color: #fff; }
-  .num-btn.taken   { opacity: 0.3; cursor: not-allowed; background: var(--bg); }
-  .num-btn.selected { background: var(--green); border-color: var(--green); color: #fff; }
-
-  .btn-join {
-    width: 100%;
-    padding: 14px;
-    border-radius: 10px;
-    background: var(--green);
-    color: #fff;
-    font-family: var(--font);
-    font-size: 16px;
-    font-weight: 600;
-    border: none;
-    cursor: pointer;
-    transition: opacity 0.12s;
-  }
-  .btn-join:disabled { opacity: 0.35; cursor: not-allowed; }
-  .btn-join:hover:not(:disabled) { opacity: 0.9; }
-
-  /* ─── GAME SCREEN ─── */
-  #gameScreen {
-    display: none;
-    flex: 1;
-    flex-direction: column;
-  }
-  #gameScreen.active { display: flex; }
+  /* ─── MAIN APP ─── */
+  #mainScreen { display: none; flex-direction: column; min-height: 100dvh; }
 
   /* HEADER */
-  .driver-header {
-    display: flex;
-    align-items: center;
-    padding: 12px 16px;
+  .hdr {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px 10px;
     border-bottom: 1px solid var(--border);
     background: var(--surface);
-    gap: 10px;
-    flex-shrink: 0;
+    position: sticky; top: 0; z-index: 10;
   }
+  .hdr-name { font-size: 13px; color: var(--dim); }
+  .hdr-name span { color: var(--text); font-weight: 600; }
+  .hdr-round { font-family: var(--mono); font-size: 13px; color: var(--dim); }
+  .hdr-round strong { color: var(--blue-lt); }
 
-  .driver-num-badge {
-    font-family: var(--mono);
-    font-size: 14px;
-    font-weight: 500;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 4px 10px;
-    color: var(--green);
-  }
-
-  .header-spacer { flex: 1; }
-
-  .round-info {
-    font-size: 12px;
-    font-family: var(--mono);
-    color: var(--dim);
-  }
-
-  /* ANNOUNCEMENT BANNER */
-  #announceBanner {
-    display: none;
-    background: rgba(245,158,11,0.1);
-    border-bottom: 1px solid rgba(245,158,11,0.25);
-    padding: 10px 16px;
-    font-size: 13px;
-    color: var(--orange);
-    line-height: 1.5;
-    flex-shrink: 0;
-  }
-  #announceBanner.visible { display: block; }
-
-  /* STATS STRIP */
-  .stats-strip {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 1px;
-    background: var(--border);
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-  }
-
-  .stat-tile {
+  /* STATUS BAR */
+  .status-bar {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 8px; padding: 12px 14px 8px;
     background: var(--surface);
-    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .stat-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .stat-value { font-family: var(--mono); font-size: 18px; font-weight: 500; }
+  .stat-value.green { color: var(--green); }
+  .stat-value.orange { color: var(--orange); }
+  .stat-value.red { color: var(--red); }
+
+  /* FUEL BAR */
+  .fuel-bar-wrap { padding: 6px 14px 10px; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .fuel-bar-row { display: flex; align-items: center; gap: 8px; }
+  .fuel-label { font-size: 11px; color: var(--muted); min-width: 28px; }
+  .fuel-track { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .fuel-fill { height: 100%; border-radius: 3px; background: var(--green); transition: width .5s, background .5s; }
+  .fuel-pct { font-family: var(--mono); font-size: 11px; color: var(--dim); min-width: 32px; text-align: right; }
+
+  /* ACTION BUTTONS ROW */
+  .action-row {
+    display: flex; gap: 8px; padding: 10px 14px 4px;
+    background: var(--surface); border-bottom: 1px solid var(--border);
+  }
+  .action-btn {
+    flex: 1; padding: 8px 4px; border: 1.5px solid var(--border);
+    border-radius: 10px; background: var(--surface2); color: var(--dim);
+    font-family: var(--font); font-size: 12px; font-weight: 500;
+    cursor: pointer; transition: all .2s; text-align: center; line-height: 1.3;
+  }
+  .action-btn .btn-emoji { display: block; font-size: 18px; margin-bottom: 2px; }
+  .action-btn:active { opacity: .7; }
+  .action-btn.glow-green {
+    border-color: var(--green); color: var(--green);
+    box-shadow: 0 0 0 0 rgba(16,185,129,.5);
+    animation: pulseGreen 1.4s ease-in-out infinite;
+  }
+  .action-btn.glow-orange {
+    border-color: var(--orange); color: var(--orange);
+    box-shadow: 0 0 0 0 rgba(245,158,11,.5);
+    animation: pulseOrange 1.4s ease-in-out infinite;
+  }
+  @keyframes pulseGreen {
+    0%,100% { box-shadow: 0 0 0 0 rgba(16,185,129,.4); }
+    50% { box-shadow: 0 0 8px 3px rgba(16,185,129,.25); }
+  }
+  @keyframes pulseOrange {
+    0%,100% { box-shadow: 0 0 0 0 rgba(245,158,11,.4); }
+    50% { box-shadow: 0 0 8px 3px rgba(245,158,11,.25); }
   }
 
-  .stat-tile-label {
-    font-size: 10px;
-    font-family: var(--mono);
-    color: var(--muted);
-    letter-spacing: 0.06em;
-    margin-bottom: 3px;
-  }
+  /* SCROLL CONTENT */
+  .scroll-content { flex: 1; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
 
-  .stat-tile-value {
-    font-family: var(--mono);
-    font-size: 20px;
-    font-weight: 500;
+  /* ROUND BADGE */
+  .round-badge {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 6px 12px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; font-size: 12px; color: var(--dim); align-self: center;
   }
+  .round-badge strong { color: var(--blue-lt); }
 
-  .stat-tile-bar {
-    margin-top: 4px;
-    height: 3px;
-    background: var(--surface2);
-    border-radius: 2px;
-    overflow: hidden;
+  /* WAITING */
+  .waiting-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 32px 20px; text-align: center; display: flex; flex-direction: column;
+    align-items: center; gap: 10px;
   }
-
-  .stat-tile-bar-fill {
-    height: 100%;
-    border-radius: 2px;
-    transition: width 0.4s;
+  .waiting-emoji { font-size: 40px; }
+  .waiting-title { font-size: 16px; font-weight: 600; color: var(--dim); }
+  .waiting-sub { font-size: 13px; color: var(--muted); }
+  .dot-pulse { display: flex; gap: 5px; justify-content: center; margin-top: 4px; }
+  .dot-pulse span {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--muted);
+    animation: dotBounce 1.2s ease-in-out infinite;
   }
-
-  /* MAIN CONTENT */
-  .driver-main {
-    flex: 1;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    overflow-y: auto;
-  }
+  .dot-pulse span:nth-child(2) { animation-delay: .2s; }
+  .dot-pulse span:nth-child(3) { animation-delay: .4s; }
+  @keyframes dotBounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
 
   /* ORDER CARD */
   .order-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 18px;
-    position: relative;
-    overflow: hidden;
+    background: var(--surface); border: 1.5px solid var(--blue);
+    border-radius: 16px; padding: 18px 16px; display: flex; flex-direction: column; gap: 14px;
+    animation: slideUp .3s ease-out;
   }
-
-  .order-card.surge {
-    border-color: var(--orange);
-    background: rgba(245,158,11,0.06);
+  @keyframes slideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+  .order-header { display: flex; align-items: center; gap: 10px; }
+  .order-emoji { font-size: 28px; }
+  .order-title { font-size: 17px; font-weight: 600; }
+  .order-scenario { font-size: 12px; color: var(--dim); margin-top: 1px; }
+  .order-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .order-meta-item { background: var(--surface2); border-radius: 10px; padding: 10px 12px; }
+  .order-meta-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .order-meta-value { font-size: 16px; font-weight: 600; margin-top: 3px; font-family: var(--mono); }
+  .order-difficult { font-size: 12px; color: var(--dim); padding: 8px 12px; background: var(--surface2); border-radius: 8px; border-left: 3px solid var(--orange); }
+  .order-accept {
+    width: 100%; padding: 14px; background: var(--blue); border: none; border-radius: 12px;
+    color: #000; font-family: var(--font); font-size: 15px; font-weight: 600;
+    cursor: pointer; transition: opacity .2s;
   }
-
-  .order-badge {
-    font-size: 10px;
-    font-family: var(--mono);
-    letter-spacing: 0.08em;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-weight: 500;
-    margin-bottom: 10px;
-    display: inline-block;
+  .order-accept:active { opacity: .8; }
+  .order-skip {
+    width: 100%; padding: 10px; background: none; border: 1px solid var(--border);
+    border-radius: 12px; color: var(--dim); font-family: var(--font); font-size: 14px;
+    cursor: pointer; transition: opacity .2s;
   }
+  .order-skip:active { opacity: .6; }
 
-  .order-badge.normal { background: rgba(212,160,0,0.15); color: var(--blue-lt); }
-  .order-badge.surge  { background: rgba(245,158,11,0.15); color: var(--orange); }
-
-  .order-meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    margin-bottom: 14px;
+  /* RIDE ANIMATION CARD */
+  .ride-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 20px 16px 20px; overflow: hidden; position: relative;
+    display: flex; flex-direction: column; gap: 12px;
   }
-
-  .order-dist {
-    font-size: 13px;
-    color: var(--dim);
+  .ride-title { font-size: 15px; font-weight: 600; color: var(--dim); text-align: center; }
+  .ride-road {
+    position: relative; height: 48px; background: var(--surface2);
+    border-radius: 10px; overflow: hidden; border: 1px solid var(--border);
   }
-
-  .order-earn {
-    text-align: right;
+  .ride-road-line {
+    position: absolute; top: 50%; left: 0; right: 0; height: 2px;
+    background: repeating-linear-gradient(90deg, var(--border) 0, var(--border) 16px, transparent 16px, transparent 28px);
+    transform: translateY(-50%);
   }
-
-  .order-gross {
-    font-family: var(--mono);
-    font-size: 24px;
-    font-weight: 500;
-    color: var(--green);
+  .ride-car {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    font-size: 24px; left: -5%;
+    animation: driveAcross var(--ride-duration) linear forwards;
   }
+  @keyframes driveAcross { from { left: -5%; } to { left: 105%; } }
+  .ride-dest { font-size: 13px; color: var(--muted); text-align: center; }
 
-  .order-cut-note {
-    font-size: 11px;
-    color: var(--muted);
-    font-family: var(--mono);
-    margin-top: 1px;
+  /* RESULTS CARD */
+  .results-card {
+    background: var(--surface); border: 1.5px solid var(--green);
+    border-radius: 16px; padding: 18px 16px; display: flex; flex-direction: column; gap: 0;
+    animation: slideUp .3s ease-out;
   }
-
-  .order-timer {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--orange);
-    margin-bottom: 12px;
+  .results-header { font-size: 16px; font-weight: 600; margin-bottom: 14px; text-align: center; }
+  .result-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 9px 0; border-bottom: 1px solid var(--border);
+    opacity: 0; transition: opacity .4s;
   }
-
-  .order-timer-bar {
-    height: 2px;
-    background: var(--surface2);
-    border-radius: 1px;
-    overflow: hidden;
-    margin-bottom: 14px;
+  .result-row.visible { opacity: 1; }
+  .result-row:last-of-type { border-bottom: none; }
+  .result-label { font-size: 13px; color: var(--dim); }
+  .result-value { font-family: var(--mono); font-size: 14px; font-weight: 500; }
+  .result-value.green { color: var(--green); }
+  .result-value.red { color: var(--red); }
+  .result-value.orange { color: var(--orange); }
+  .result-comment { font-size: 12px; color: var(--muted); font-style: italic; margin-top: 4px; }
+  .results-dismiss {
+    margin-top: 14px; width: 100%; padding: 12px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 12px; color: var(--dim);
+    font-family: var(--font); font-size: 14px; cursor: pointer; opacity: 0;
+    transition: opacity .4s;
   }
+  .results-dismiss.visible { opacity: 1; }
 
-  .order-timer-fill {
-    height: 100%;
-    background: var(--orange);
-    border-radius: 1px;
-    transition: width 0.5s linear;
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(8px);
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 24px; padding: 9px 18px; font-size: 13px; color: var(--text);
+    white-space: nowrap; opacity: 0; transition: opacity .25s, transform .25s;
+    z-index: 100; pointer-events: none;
   }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-  .order-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
-
-  .btn-decline {
-    padding: 12px;
-    border-radius: 8px;
-    background: rgba(239,68,68,0.1);
-    border: 1px solid rgba(239,68,68,0.2);
-    color: var(--red);
-    font-family: var(--font);
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background 0.12s;
-  }
-  .btn-decline:hover { background: rgba(239,68,68,0.2); }
-
-  .btn-accept {
-    padding: 12px;
-    border-radius: 8px;
-    background: var(--green);
-    border: none;
-    color: #fff;
-    font-family: var(--font);
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity 0.12s;
-  }
-  .btn-accept:hover { opacity: 0.9; }
-
-  /* NO ORDER STATE */
-  .no-order {
-    background: var(--surface);
-    border: 1px dashed var(--border);
-    border-radius: 12px;
-    padding: 32px 20px;
-    text-align: center;
-    color: var(--muted);
-    font-size: 14px;
-    line-height: 1.6;
-  }
-
-  /* STATUS CARD */
-  .status-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 14px 16px;
-    font-size: 13px;
-    color: var(--dim);
-    line-height: 1.55;
-  }
-
-  .status-card.earn { border-color: rgba(16,185,129,0.3); background: rgba(16,185,129,0.06); color: var(--green); }
-  .status-card.warn { border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.06); color: var(--orange); }
-  .status-card.bad  { border-color: rgba(239,68,68,0.3);  background: rgba(239,68,68,0.06);  color: var(--red); }
-
-  .status-card strong { display: block; font-size: 15px; font-weight: 600; margin-bottom: 2px; }
-
-  /* REFUEL BUTTON */
-  .refuel-card {
-    background: rgba(245,158,11,0.08);
-    border: 1px solid rgba(245,158,11,0.25);
-    border-radius: 12px;
-    padding: 14px 16px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+  /* SUSPENDED OVERLAY */
+  .suspended-overlay {
+    display: none; position: fixed; inset: 0; z-index: 200;
+    background: rgba(6,9,15,.97);
+    flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 32px;
     gap: 12px;
   }
+  .suspended-overlay.active { display: flex; }
+  .suspended-icon { font-size: 56px; }
+  .suspended-title { font-size: 22px; font-weight: 700; color: var(--red); }
+  .suspended-body { font-size: 14px; color: var(--dim); line-height: 1.6; max-width: 300px; }
+  .suspended-hint { font-size: 12px; color: var(--muted); margin-top: 8px; }
 
-  .refuel-info {
-    font-size: 13px;
-    color: var(--orange);
-    line-height: 1.45;
+  /* GAME ENDED */
+  .ended-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 28px 20px; text-align: center; display: flex; flex-direction: column;
+    align-items: center; gap: 10px;
+  }
+  .ended-emoji { font-size: 48px; }
+  .ended-title { font-size: 20px; font-weight: 700; color: var(--blue-lt); }
+  .ended-sub { font-size: 13px; color: var(--dim); }
+  .ended-final { font-size: 32px; font-weight: 700; font-family: var(--mono); }
+
+  /* WAITING FOR ROUND */
+  .between-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 28px 20px; text-align: center; display: flex; flex-direction: column;
+    align-items: center; gap: 8px;
   }
 
-  .btn-refuel {
-    padding: 10px 16px;
-    border-radius: 8px;
-    background: var(--orange);
-    border: none;
-    color: #fff;
-    font-family: var(--font);
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    white-space: nowrap;
-    flex-shrink: 0;
-    transition: opacity 0.12s;
-  }
-  .btn-refuel:hover { opacity: 0.9; }
-  .btn-refuel:disabled { opacity: 0.4; cursor: not-allowed; }
-
-  /* DEACTIVATION OVERLAY */
-  #deactivatedOverlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(6,9,15,0.92);
-    backdrop-filter: blur(6px);
-    z-index: 50;
-    align-items: center;
-    justify-content: center;
-    padding: 32px 24px;
-    text-align: center;
-  }
-  #deactivatedOverlay.show { display: flex; flex-direction: column; }
-
-  .deact-icon { font-size: 48px; margin-bottom: 16px; }
-  #deactivatedOverlay h2 { font-size: 24px; font-weight: 600; color: var(--red); margin-bottom: 10px; }
-  #deactivatedOverlay p  { font-size: 14px; color: var(--dim); line-height: 1.6; max-width: 300px; }
-
-  /* WAITING SCREEN */
-  #waitingMsg {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 28px 20px;
-    text-align: center;
-  }
-  #waitingMsg .wt { font-size: 28px; margin-bottom: 12px; }
-  #waitingMsg h3  { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
-  #waitingMsg p   { font-size: 13px; color: var(--dim); line-height: 1.6; }
-
-  /* EVENT POP */
-  #eventPop {
-    position: fixed;
-    bottom: 24px;
-    left: 50%;
-    transform: translateX(-50%) translateY(20px);
-    width: calc(100vw - 32px);
-    max-width: 388px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 14px 16px;
-    opacity: 0;
-    transition: opacity 0.25s, transform 0.25s;
-    pointer-events: none;
-    z-index: 40;
-  }
-  #eventPop.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-  #eventPop.earn { border-color: rgba(16,185,129,0.4); }
-  #eventPop.warn { border-color: rgba(245,158,11,0.4); }
-  #eventPop.bad  { border-color: rgba(239,68,68,0.4); }
-
-  #eventPop .pop-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
-  #eventPop .pop-body  { font-size: 12px; color: var(--dim); }
-  #eventPop.earn .pop-title { color: var(--green); }
-  #eventPop.warn .pop-title { color: var(--orange); }
-  #eventPop.bad  .pop-title { color: var(--red); }
-
-  /* Scrollbar */
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  /* RATING STARS */
+  .stars { font-size: 20px; letter-spacing: 2px; }
 </style>
 </head>
 <body>
 
 <!-- JOIN SCREEN -->
 <div id="joinScreen">
-  <div class="join-logo"><span>CapyUber</span> — Driver App</div>
-  <h1>Join the Fleet</h1>
-  <p>Pick your driver number. Each number is unique — you'll keep it through all rounds.</p>
-  <div class="join-card">
-    <label>Select your number</label>
-    <div class="join-nums" id="numGrid"></div>
-    <button class="btn-join" id="btnJoin" disabled onclick="joinGame()">Select a number to join</button>
-  </div>
+  <div class="join-logo">🚗</div>
+  <div class="join-title">CapyUber Driver</div>
+  <div class="join-sub">Enter your driver number to start</div>
+  <input class="join-input" id="driverNumInput" type="number" min="1" max="99"
+         placeholder="e.g. 7" inputmode="numeric">
+  <button class="join-btn" onclick="joinGame()">Start Driving</button>
+  <div class="join-error" id="joinError"></div>
 </div>
 
-<!-- GAME SCREEN -->
-<div id="gameScreen">
-  <div class="driver-header">
-    <div class="driver-num-badge" id="myBadge">Driver #—</div>
-    <div class="header-spacer"></div>
-    <div class="round-info" id="roundInfo">Round — / 4</div>
+<!-- MAIN SCREEN -->
+<div id="mainScreen">
+  <!-- Header -->
+  <div class="hdr">
+    <div class="hdr-name">Driver <span id="hdrName">—</span></div>
+    <div class="hdr-round">Round <strong id="hdrRound">—</strong> / 10</div>
   </div>
-  <div id="announceBanner"></div>
 
-  <div class="stats-strip">
-    <div class="stat-tile">
-      <div class="stat-tile-label">Rating</div>
-      <div class="stat-tile-value" id="myRating">100%</div>
-      <div class="stat-tile-bar"><div class="stat-tile-bar-fill" id="ratingBar" style="width:100%;background:var(--green)"></div></div>
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <div class="stat-cell">
+      <div class="stat-label">Balance</div>
+      <div class="stat-value" id="statBalance">€0</div>
     </div>
-    <div class="stat-tile">
-      <div class="stat-tile-label">Balance</div>
-      <div class="stat-tile-value" id="myBalance" style="color:var(--green)">€0.00</div>
+    <div class="stat-cell">
+      <div class="stat-label">Rating</div>
+      <div class="stat-value" id="statRating">100%</div>
     </div>
-    <div class="stat-tile">
-      <div class="stat-tile-label">Fuel</div>
-      <div class="stat-tile-value" id="myFuel">100%</div>
-      <div class="stat-tile-bar"><div class="stat-tile-bar-fill" id="fuelBar" style="width:100%;background:var(--green)"></div></div>
+    <div class="stat-cell">
+      <div class="stat-label">Trips</div>
+      <div class="stat-value" id="statTrips">0</div>
     </div>
   </div>
 
-  <div class="driver-main" id="driverMain">
-    <div id="waitingMsg">
-      <div class="wt">⏳</div>
-      <h3>Waiting for round to start</h3>
-      <p>The instructor will start the round shortly.<br>Stay on this screen.</p>
+  <!-- Fuel Bar -->
+  <div class="fuel-bar-wrap">
+    <div class="fuel-bar-row">
+      <div class="fuel-label">⛽</div>
+      <div class="fuel-track"><div class="fuel-fill" id="fuelFill" style="width:100%"></div></div>
+      <div class="fuel-pct" id="fuelPct">100%</div>
     </div>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="action-row">
+    <button class="action-btn" id="btnRefuel" onclick="doRefuel()">
+      <span class="btn-emoji">⛽</span>Refuel €4
+    </button>
+    <button class="action-btn" id="btnWash" onclick="doWash()">
+      <span class="btn-emoji">🚿</span>Car Wash €1
+    </button>
+  </div>
+
+  <!-- Scroll Content -->
+  <div class="scroll-content" id="mainContent">
+    <!-- Dynamic content inserted here -->
   </div>
 </div>
 
-<!-- DEACTIVATED OVERLAY -->
-<div id="deactivatedOverlay">
-  <div class="deact-icon">🚫</div>
-  <h2>Account Deactivated</h2>
-  <p>Your rating dropped below 70%. The platform has removed you from active service.</p>
-  <p style="margin-top:12px;font-size:12px;color:var(--muted)">This is algorithmic management in action — no appeal, no hearing.</p>
+<!-- Suspended Overlay -->
+<div class="suspended-overlay" id="suspendedOverlay">
+  <div class="suspended-icon">🚫</div>
+  <div class="suspended-title">Account Suspended</div>
+  <div class="suspended-body">Your balance is too low to refuel and continue driving. The platform has temporarily suspended your account.</div>
+  <div class="suspended-hint">Wait for the instructor to end the game or ask for help.</div>
 </div>
 
-<!-- EVENT POP TOAST -->
-<div id="eventPop">
-  <div class="pop-title" id="popTitle">Event</div>
-  <div class="pop-body"  id="popBody"></div>
-</div>
+<!-- Toast -->
+<div class="toast" id="toast"></div>
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getFirestore, doc, setDoc, getDoc, onSnapshot,
-         collection, addDoc, updateDoc, serverTimestamp, increment
-} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, increment }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
+// ─── FIREBASE ───────────────────────────────────────────────
 const firebaseConfig = {
   apiKey: "AIzaSyAdoc6mHAO4xpywSs1wM3J34hxCG2tkWiI",
   authDomain: "platform-economy.firebaseapp.com",
@@ -555,509 +383,658 @@ const firebaseConfig = {
   messagingSenderId: "865626286029",
   appId: "1:865626286029:web:9a4b8b49300c15d9e68684"
 };
-
 const app = initializeApp(firebaseConfig, 'driver');
 const db  = getFirestore(app);
 
-// ─── DRIVER STATE ─────────────────────────────────────────────────────────────
-let myId     = localStorage.getItem('driverId')     || null;
-let myNum    = parseInt(localStorage.getItem('driverNumber')) || null;
-let selectedNum = null;
-
-let driverState = {
-  rating: 100,
-  balance: 0,
-  fuel: 100,
-  status: 'active',
-  ordersCompleted: 0,
-  ordersDeclined: 0
-};
-
-let gameState = { status: 'lobby', round: 0, takeRate: 20 };
-let currentOrder  = null;
-let orderTimer    = null;
-let eventInterval = null;
-let orderInterval = null;
-let takenNumbers  = new Set();
-
-// ─── EXPOSE ───────────────────────────────────────────────────────────────────
-window.joinGame     = joinGame;
-window.acceptOrder  = acceptOrder;
-window.declineOrder = declineOrder;
-window.doRefuel     = doRefuel;
-
-// ─── BUILD NUMBER GRID ────────────────────────────────────────────────────────
-function buildGrid() {
-  const grid = document.getElementById('numGrid');
-  grid.innerHTML = '';
-  for (let i = 1; i <= 30; i++) {
-    const btn = document.createElement('button');
-    btn.className = 'num-btn';
-    btn.textContent = i;
-    btn.dataset.n = i;
-    if (takenNumbers.has(i)) btn.classList.add('taken');
-    if (i === selectedNum)   btn.classList.add('selected');
-    btn.onclick = () => selectNum(i);
-    grid.appendChild(btn);
-  }
-}
-
-function selectNum(n) {
-  if (takenNumbers.has(n)) return;
-  selectedNum = n;
-  document.querySelectorAll('.num-btn').forEach(b => {
-    b.classList.toggle('selected', parseInt(b.dataset.n) === n);
-  });
-  const btn = document.getElementById('btnJoin');
-  btn.disabled     = false;
-  btn.textContent  = `Join as Driver #${n}`;
-}
-
-// ─── WATCH TAKEN NUMBERS ──────────────────────────────────────────────────────
-onSnapshot(collection(db, 'drivers'), snap => {
-  takenNumbers = new Set(snap.docs.map(d => d.data().driverNumber).filter(Boolean));
-  buildGrid();
-});
-
-// ─── JOIN GAME ────────────────────────────────────────────────────────────────
-async function joinGame() {
-  if (!selectedNum) return;
-  if (takenNumbers.has(selectedNum)) {
-    alert(`Driver #${selectedNum} is already taken. Please pick another.`);
-    return;
-  }
-
-  const ref = doc(collection(db, 'drivers'));
-  myId  = ref.id;
-  myNum = selectedNum;
-  localStorage.setItem('driverId', myId);
-  localStorage.setItem('driverNumber', myNum);
-
-  driverState = { rating: 100, balance: 0, fuel: 100, status: 'active', driverNumber: myNum, ordersCompleted: 0, ordersDeclined: 0 };
-  await setDoc(ref, { ...driverState, timestamp: serverTimestamp() });
-
-  await addDoc(collection(db, 'events'), {
-    type: 'system',
-    message: `🚗 Driver <strong>#${myNum}</strong> joined the fleet`,
-    timestamp: serverTimestamp()
-  });
-
-  startGameScreen();
-}
-
-// ─── RESTORE SESSION ──────────────────────────────────────────────────────────
-async function tryRestoreSession() {
-  if (!myId || !myNum) { buildGrid(); return; }
-
-  const snap = await getDoc(doc(db, 'drivers', myId));
-  if (!snap.exists()) {
-    // Was cleared (new game)
-    localStorage.removeItem('driverId');
-    localStorage.removeItem('driverNumber');
-    myId = null; myNum = null;
-    buildGrid();
-    return;
-  }
-
-  driverState = snap.data();
-  startGameScreen();
-}
-
-tryRestoreSession();
-
-// ─── START GAME SCREEN ────────────────────────────────────────────────────────
-function startGameScreen() {
-  document.getElementById('joinScreen').style.display = 'none';
-  document.getElementById('gameScreen').classList.add('active');
-  document.getElementById('myBadge').textContent = `Driver #${myNum}`;
-
-  // Listen to own driver doc
-  onSnapshot(doc(db, 'drivers', myId), snap => {
-    if (!snap.exists()) {
-      // Reset (new game)
-      location.reload();
-      return;
-    }
-    driverState = snap.data();
-    renderStats();
-    checkDeactivation();
-  });
-
-  // Listen to game state
-  onSnapshot(doc(db, 'game', 'state'), snap => {
-    if (!snap.exists()) return;
-    const prev = gameState;
-    gameState  = snap.data();
-
-    document.getElementById('roundInfo').textContent = `Round ${gameState.round || '—'} / 4`;
-
-    // Announcement
-    const banner = document.getElementById('announceBanner');
-    if (gameState.announcement) {
-      banner.textContent = '📢 ' + gameState.announcement;
-      banner.classList.add('visible');
-    } else {
-      banner.classList.remove('visible');
-    }
-
-    // Round transitions
-    if (gameState.status === 'round_active' && prev.status !== 'round_active') {
-      startRound();
-    } else if (gameState.status !== 'round_active' && prev.status === 'round_active') {
-      stopRound();
-    }
-
-    renderMain();
-  });
-}
-
-// ─── ROUND CONTROL ────────────────────────────────────────────────────────────
-function startRound() {
-  clearIntervals();
-  currentOrder  = null;
-  renderMain();
-
-  orderInterval = setInterval(maybeGenerateOrder, 3000);
-  eventInterval = setInterval(maybeFireEvent, 10000);
-}
-
-function stopRound() {
-  clearIntervals();
-  currentOrder = null;
-  renderMain();
-}
-
-function clearIntervals() {
-  if (orderInterval) { clearInterval(orderInterval); orderInterval = null; }
-  if (eventInterval) { clearInterval(eventInterval); eventInterval = null; }
-  if (orderTimer)    { clearInterval(orderTimer);    orderTimer    = null; }
-}
-
-// ─── RENDER MAIN ─────────────────────────────────────────────────────────────
-function renderMain() {
-  const main = document.getElementById('driverMain');
-  if (!main) return;
-  main.innerHTML = '';
-
-  const { status } = gameState;
-
-  if (status === 'lobby' || status === 'round_ended' || status === 'game_ended') {
-    const msgs = {
-      lobby:       ['⏳', 'Waiting for round to start', 'The instructor will start the round shortly. Stay on this screen.'],
-      round_ended: ['⏸',  'Round ended', 'Wait for the instructor to start the next round.'],
-      game_ended:  ['🏁',  'Game over', 'Thanks for playing! Check the platform dashboard for results.']
-    };
-    const [icon, title, body] = msgs[status] || msgs.lobby;
-    main.innerHTML = `<div id="waitingMsg">
-      <div class="wt">${icon}</div>
-      <h3>${title}</h3>
-      <p>${body}</p>
-    </div>`;
-    return;
-  }
-
-  if (status !== 'round_active') return;
-
-  // Fuel warning / block
-  if (driverState.fuel <= 0) {
-    main.innerHTML += `<div class="status-card bad">
-      <strong>⛽ Out of Fuel</strong>
-      You can't accept orders. Refuel to continue.
-    </div>`;
-  }
-
-  // Refuel button
-  if (driverState.fuel < 30 && driverState.status !== 'deactivated') {
-    main.innerHTML += `<div class="refuel-card">
-      <div class="refuel-info"><strong style="display:block;margin-bottom:2px">Low fuel — ${driverState.fuel}%</strong>Costs €4.00 · restores to 100%</div>
-      <button class="btn-refuel" id="refuelBtn" onclick="doRefuel()">Refuel</button>
-    </div>`;
-  }
-
-  // Order or waiting
-  if (currentOrder && driverState.fuel > 0) {
-    const { dist, grossAmt, isSurge, expiresAt } = currentOrder;
-    const rate      = gameState.takeRate || 20;
-    const driverNet = (grossAmt * (1 - rate / 100)).toFixed(2);
-    const cutNote   = `You keep €${driverNet} (platform takes ${rate}%)`;
-    const timeLeft  = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
-
-    main.innerHTML += `<div class="order-card ${isSurge ? 'surge' : ''}">
-      <span class="order-badge ${isSurge ? 'surge' : 'normal'}">${isSurge ? '⚡ SURGE' : 'NEW ORDER'}</span>
-      <div class="order-meta">
-        <div class="order-dist">📍 ${dist} km away</div>
-        <div class="order-earn">
-          <div class="order-gross">€${grossAmt.toFixed(2)}</div>
-          <div class="order-cut-note">${cutNote}</div>
-        </div>
-      </div>
-      <div class="order-timer" id="orderCountdown">Expires in ${timeLeft}s</div>
-      <div class="order-timer-bar"><div class="order-timer-fill" id="orderTimerFill" style="width:${(timeLeft/15)*100}%"></div></div>
-      <div class="order-actions">
-        <button class="btn-decline" onclick="declineOrder()">Decline</button>
-        <button class="btn-accept"  onclick="acceptOrder()">Accept</button>
-      </div>
-    </div>`;
-
-    // Start countdown
-    if (orderTimer) clearInterval(orderTimer);
-    orderTimer = setInterval(() => {
-      const left = Math.max(0, Math.ceil((currentOrder.expiresAt - Date.now()) / 1000));
-      const cd   = document.getElementById('orderCountdown');
-      const fill = document.getElementById('orderTimerFill');
-      if (cd)   cd.textContent = `Expires in ${left}s`;
-      if (fill) fill.style.width = `${(left/15)*100}%`;
-      if (left <= 0) {
-        clearInterval(orderTimer); orderTimer = null;
-        currentOrder = null;
-        // Auto-decline: small rating hit
-        applyRatingDelta(-3, 'Order expired without response');
-        renderMain();
-      }
-    }, 500);
-
-  } else if (driverState.fuel > 0) {
-    main.innerHTML += `<div class="no-order">Waiting for an order...<br><br>
-      <span style="font-size:12px;color:var(--muted)">Orders arrive randomly. Stay ready.</span>
-    </div>`;
-  }
-}
-
-// ─── RENDER STATS ─────────────────────────────────────────────────────────────
-function renderStats() {
-  const { rating = 100, balance = 0, fuel = 100 } = driverState;
-
-  document.getElementById('myRating').textContent  = `${rating}%`;
-  document.getElementById('myBalance').textContent  = `€${balance.toFixed(2)}`;
-  document.getElementById('myFuel').textContent     = `${fuel}%`;
-
-  const ratingColor = rating >= 85 ? 'var(--green)' : rating >= 70 ? 'var(--orange)' : 'var(--red)';
-  const fuelColor   = fuel   >= 30 ? 'var(--green)' : fuel   >= 10 ? 'var(--orange)' : 'var(--red)';
-
-  const rb = document.getElementById('ratingBar');
-  const fb = document.getElementById('fuelBar');
-  if (rb) { rb.style.width = `${rating}%`; rb.style.background = ratingColor; }
-  if (fb) { fb.style.width = `${fuel}%`;   fb.style.background = fuelColor;   }
-}
-
-// ─── DEACTIVATION ─────────────────────────────────────────────────────────────
-async function checkDeactivation() {
-  if (driverState.rating < 70 && driverState.status !== 'deactivated') {
-    // Should already be set, but ensure
-    await updateDoc(doc(db, 'drivers', myId), { status: 'deactivated' });
-    document.getElementById('deactivatedOverlay').classList.add('show');
-  } else if (driverState.status === 'deactivated') {
-    document.getElementById('deactivatedOverlay').classList.add('show');
-  }
-}
-
-// ─── ORDER GENERATION ────────────────────────────────────────────────────────
-function maybeGenerateOrder() {
-  if (gameState.status !== 'round_active') return;
-  if (currentOrder) return; // Already have one
-  if (driverState.status === 'deactivated') return;
-  if (driverState.fuel <= 0) return;
-  if (Math.random() > 0.18) return; // ~18% chance per tick → ~1 order per ~17s
-
-  const dist    = Math.floor(Math.random() * 8) + 1;
-  const isSurge = Math.random() < 0.2;
-  const base    = 2 + Math.random() * 6;
-  const grossAmt = parseFloat((isSurge ? base * (1.5 + Math.random() * 0.5) : base).toFixed(2));
-
-  currentOrder = {
-    dist,
-    grossAmt,
-    isSurge,
-    expiresAt: Date.now() + 15000
-  };
-  renderMain();
-}
-
-// ─── ACCEPT ORDER ────────────────────────────────────────────────────────────
-async function acceptOrder() {
-  if (!currentOrder || driverState.fuel <= 0) return;
-  if (orderTimer) { clearInterval(orderTimer); orderTimer = null; }
-
-  const { grossAmt, dist, isSurge } = currentOrder;
-  const rate     = gameState.takeRate || 20;
-  const earning  = parseFloat((grossAmt * (1 - rate / 100)).toFixed(2));
-  const platCut  = parseFloat((grossAmt * (rate / 100)).toFixed(2));
-  const fuelUsed = 15 + Math.floor(Math.random() * 6);
-
-  const newBalance = parseFloat(((driverState.balance || 0) + earning).toFixed(2));
-  const newFuel    = Math.max(0, (driverState.fuel || 100) - fuelUsed);
-
-  currentOrder = null;
-
-  // Update driver doc
-  await updateDoc(doc(db, 'drivers', myId), {
-    balance: newBalance,
-    fuel:    newFuel,
-    ordersCompleted: (driverState.ordersCompleted || 0) + 1
-  });
-
-  // Update platform revenue + order count
-  await updateDoc(doc(db, 'game', 'state'), {
-    platformRevenue:  increment(platCut),
-    ordersCompleted:  increment(1)
-  });
-
-  // Log event
-  await addDoc(collection(db, 'events'), {
-    type: 'earn',
-    message: `🚗 Driver <strong>#${myNum}</strong> completed ${dist}km — earned <strong>€${earning.toFixed(2)}</strong> (platform kept €${platCut.toFixed(2)})`,
-    timestamp: serverTimestamp()
-  });
-
-  showEventPop('earn', `+€${earning.toFixed(2)} earned`, `${dist} km trip. Fuel -${fuelUsed}%.`);
-  renderMain();
-}
-
-// ─── DECLINE ORDER ───────────────────────────────────────────────────────────
-async function declineOrder() {
-  if (!currentOrder) return;
-  if (orderTimer) { clearInterval(orderTimer); orderTimer = null; }
-  currentOrder = null;
-
-  await applyRatingDelta(-2, `Driver <strong>#${myNum}</strong> declined an order — rating -2%`);
-  renderMain();
-}
-
-// ─── REFUEL ──────────────────────────────────────────────────────────────────
-async function doRefuel() {
-  const btn = document.getElementById('refuelBtn');
-  if (btn) btn.disabled = true;
-
-  const cost = 4;
-  const newBalance = parseFloat(((driverState.balance || 0) - cost).toFixed(2));
-  await updateDoc(doc(db, 'drivers', myId), { fuel: 100, balance: newBalance });
-
-  await addDoc(collection(db, 'events'), {
-    type: 'warn',
-    message: `⛽ Driver <strong>#${myNum}</strong> refuelled — paid €${cost.toFixed(2)}`,
-    timestamp: serverTimestamp()
-  });
-
-  showEventPop('warn', '⛽ Refuelled', `Cost €${cost.toFixed(2)}. Tank full.`);
-}
-
-// ─── RANDOM EVENTS ───────────────────────────────────────────────────────────
-const EVENTS = [
-  {
-    weight: 2,
-    type: 'bad',
-    title: '⭐ Unfair complaint',
-    body:  'A passenger complained — no details given.',
-    apply: async () => {
-      const delta = -(5 + Math.floor(Math.random() * 8));
-      await applyRatingDelta(delta, `Driver <strong>#${myNum}</strong> received a passenger complaint — rating ${delta}%`);
-      return `Rating ${delta}%`;
-    }
-  },
-  {
-    weight: 1,
-    type: 'bad',
-    title: '🚧 Traffic jam',
-    body:  'Heavy traffic — fuel burned faster this trip.',
-    apply: async () => {
-      const burn = 10 + Math.floor(Math.random() * 8);
-      const newFuel = Math.max(0, (driverState.fuel || 100) - burn);
-      await updateDoc(doc(db, 'drivers', myId), { fuel: newFuel });
-      await addDoc(collection(db, 'events'), { type: 'warn', message: `🚧 Driver <strong>#${myNum}</strong> hit traffic — fuel -${burn}%`, timestamp: serverTimestamp() });
-      return `Fuel -${burn}%`;
-    }
-  },
-  {
-    weight: 1,
-    type: 'bad',
-    title: '⛽ Unexpected fuel drain',
-    body:  'Something drained your tank.',
-    apply: async () => {
-      const drain = 12 + Math.floor(Math.random() * 6);
-      const newFuel = Math.max(0, (driverState.fuel || 100) - drain);
-      await updateDoc(doc(db, 'drivers', myId), { fuel: newFuel });
-      await addDoc(collection(db, 'events'), { type: 'warn', message: `⛽ Driver <strong>#${myNum}</strong> lost ${drain}% fuel unexpectedly`, timestamp: serverTimestamp() });
-      return `Fuel -${drain}%`;
-    }
-  },
-  {
-    weight: 2,
-    type: 'earn',
-    title: '💵 Generous tip',
-    body:  'A passenger left you a cash tip!',
-    apply: async () => {
-      const tip = 2 + parseFloat((Math.random() * 4).toFixed(2));
-      const newBalance = parseFloat(((driverState.balance || 0) + tip).toFixed(2));
-      await updateDoc(doc(db, 'drivers', myId), { balance: newBalance });
-      await updateDoc(doc(db, 'game', 'state'), { platformRevenue: increment(0) }); // no change
-      await addDoc(collection(db, 'events'), { type: 'earn', message: `💵 Driver <strong>#${myNum}</strong> received a tip — +€${tip.toFixed(2)}`, timestamp: serverTimestamp() });
-      return `+€${tip.toFixed(2)}`;
-    }
-  },
-  {
-    weight: 1,
-    type: 'earn',
-    title: '🎉 City festival',
-    body:  'High demand — next order is surge priced!',
-    apply: async () => {
-      // Inject a surge order immediately
-      const dist = Math.floor(Math.random() * 6) + 2;
-      const base = 4 + Math.random() * 4;
-      const grossAmt = parseFloat((base * 1.8).toFixed(2));
-      currentOrder = { dist, grossAmt, isSurge: true, expiresAt: Date.now() + 15000 };
-      await addDoc(collection(db, 'events'), { type: 'earn', message: `🎉 City festival surge — Driver <strong>#${myNum}</strong> gets priority order`, timestamp: serverTimestamp() });
-      renderMain();
-      return 'Surge order incoming!';
-    }
-  }
+// ─── CONTENT ARRAYS ─────────────────────────────────────────
+const COMMENTS_0 = [
+  "Client fell asleep before exiting the car",
+  "Client was texting 'Babe' the entire trip",
+  "Client got out without making eye contact. Normal.",
+  "Not sure they were still alive",
+  "Client left you on read",
+  "Client was watching a TV show. Season finale. You were background noise.",
+  "Client answered 14 WhatsApp messages. Did not look up once.",
+  "You were the alarm clock for a 4-minute nap.",
+  "Client was eating a full meal. You provided the ambiance.",
+  "Client was listening to a podcast at max volume. Both earbuds. Gone.",
+  "Client left without saying goodbye. It still hurts.",
+  "Client forgot they were in a car.",
+  "App crashed before client could rate. Or so they said.",
+  "Client spent the trip reorganizing their notes app.",
+  "Client stared out the window the entire time. Deep thoughts.",
+  "You were the third wheel on a phone call about someone named Denis.",
+  "Client was watching stock prices. Their expression did not change.",
+  "Client entered the car mid-sentence and exited the same way.",
+  "Not sure they noticed the capybara air freshener. Or you.",
+  "Client's headphones were in before the door closed.",
+  "Client filmed a story for Instagram. You were not tagged.",
+  "Client was doing breathing exercises. You didn't ask.",
+  "Client replied to emails for the entire trip. CC'd you on nothing.",
+  "Client had 47 unread notifications. You saw. Said nothing.",
+  "Client rated the app store instead of the driver. Somehow."
 ];
 
-function pickEvent() {
-  const total = EVENTS.reduce((s, e) => s + e.weight, 0);
-  let r = Math.random() * total;
-  for (const ev of EVENTS) {
-    r -= ev.weight;
-    if (r <= 0) return ev;
+const COMMENTS_1 = [
+  "Didn't like the haircut",
+  "Air freshener smelled like 'Corporate Ambition'",
+  "Driver hummed along to every song. Every. Single. One.",
+  "Took a 'shortcut' through three roundabouts",
+  "GPS said 'recalculating' in a judgmental tone",
+  "Asked client if they wanted to hear about his 5-year plan",
+  "Dashboard bobblehead was unsettling",
+  "Driver laughed at his own jokes",
+  "Car made suspicious noise at every red light",
+  "Drove with two hands. Very suspicious.",
+  "Driver stopped to pick up a friend. 'One second.' It was not one second.",
+  "I can drive better. I don't even have a license.",
+  "Where did the driver buy their license? Asking for a friend.",
+  "Car was dirty. Client chose not to investigate the stain.",
+  "Air conditioning was on in November. Full blast.",
+  "Driver said 'almost there' four times. Were not almost there.",
+  "Driver's GPS was a printed map from 2015.",
+  "Radio was broadcasting 40% music, 60% static. Driver didn't notice.",
+  "Driver argued with a cyclist at a crossing. Lost.",
+  "Driver had 7 phone holders. None of them held the phone.",
+  "Car shook at 40 km/h. Vibes only.",
+  "Driver asked for a rating before the trip ended.",
+  "There was a smell. No explanation was offered.",
+  "Driver braked about 2 seconds after everyone else.",
+  "Playlist was 100% hits from 2007. All of them.",
+  "Driver's mirror showed only the ceiling.",
+  "Driver took a 'shortcut'. The shortcut was a parking lot.",
+  "Kept checking mirrors nervously. Client didn't ask why.",
+  "Client arrived. The journey did not spark joy."
+];
+
+const COMMENTS_3 = [
+  "Driver had excellent hair",
+  "Smelled like a forest after rain. The good kind.",
+  "Told a joke about capybaras. 10/10.",
+  "Helped with bags without being asked",
+  "Car temperature was perfect. Not too cold, not too warm.",
+  "Driver didn't ask about my day. Respect.",
+  "Had a capybara plushie on the dashboard. Instant trust.",
+  "Didn't take a single wrong turn. Legend.",
+  "Arrived exactly on time. Suspicious precision.",
+  "Drove smooth as if transporting eggs. No eggs, but still.",
+  "Waved at a dog on the street. Client approved.",
+  "Opened the door. In this economy.",
+  "Radio station was perfect. No comment on what it was.",
+  "Client is now thinking about capybaras. Thank you.",
+  "Car was spotlessly clean. Like a museum exhibit of a car.",
+  "Driver offered a charger without being asked. A saint in these times.",
+  "Didn't talk. Didn't not-talk. Perfect social calibration.",
+  "Smooth braking at every stop. Eggs: unbroken.",
+  "Driver's playlist was a 10. Client Shazamed three songs.",
+  "Let the client choose the radio. Power move.",
+  "Car was pre-heated. Pre-heated! In this economy!",
+  "Driver had mints in the center console. Classy. Understated.",
+  "Didn't comment on the client's takeout bag. True professional.",
+  "The seatbelt buckle wasn't cold. Small miracle. Five stars.",
+  "Said goodbye and clearly meant it.",
+  "Mirror was clean. Client fixed their hair. Arrived confident.",
+  "Trip so smooth client forgot they were in a car.",
+  "Driver knew a parking trick near the destination. Hero.",
+  "Capybara sticker on the bumper. Immediate credibility established.",
+  "Looked both ways at every crossing. Client noticed. Was moved.",
+  "Confidently avoided every pothole. GPS of the soul.",
+  "Gave unsolicited but accurate directions advice. Valued.",
+  "Told a capybara story. Client has not stopped thinking about it.",
+  "Driver waved goodbye with two hands. Committed. Appreciated."
+];
+
+const SCENARIOS = [
+  { emoji:'🚦', title:'Traffic jam',         body:'Every single red light. The universe had a plan for you today.',              fuelExtra:6 },
+  { emoji:'👥', title:'Unexpected stop',     body:"Picked up a friend along the way. 'One second.' It was seven minutes.",      oneStarBoost:20 },
+  { emoji:'🐱', title:'Cat on a fence',      body:'Both you and the client watched the cat the entire way. Nothing happened.' },
+  { emoji:'🎤', title:'Driver karaoke',      body:'You hummed along to every song. Every. Single. One.',                        oneStarBoost:25 },
+  { emoji:'⛽', title:'Fuel gauge scare',    body:'The fuel light came on mid-trip. You made it. Barely.',                      fuelExtra:8 },
+  { emoji:'🚲', title:'Overtaken by cyclist',body:'A cyclist passed you on the highway. The client filmed it.',                 oneStarBoost:20 },
+  { emoji:'📍', title:'GPS argument',        body:'You and the GPS disagreed on the best route. You both lost.',                fuelExtra:5, oneStarBoost:15 },
+  { emoji:'🌅', title:'Scenic detour',       body:'You took a longer path for the view. Romantic in theory.',                  fuelExtra:4 },
+  { emoji:'🤳', title:'Mirror moment',       body:'You checked your appearance in the rearview. Several times.',               oneStarBoost:15 },
+  { emoji:'🚑', title:'Ambulance pullover',  body:'You pulled over immediately and calmly. Client nodded in quiet approval.',   threeStarBoost:25 },
+  { emoji:'🐕', title:'Dog appearance',      body:'A dog appeared. No explanation. The client had feelings about it.',          threeStarBoost:20, oneStarBoost:10 },
+  { emoji:'💵', title:'Generous client',     body:'The client appreciated the ride. A cash tip was left.',                     tip:true },
+  { emoji:'🎉', title:'City festival',       body:'High demand across the city! Your next order will be surge-priced.',        surge:true },
+  { emoji:'🔧', title:'Check engine light',  body:'Appeared mid-trip. Cannot be ignored. Workshop visit inevitable.',           cost:5 },
+  { emoji:'💥', title:'Fender bender',       body:'A slow-speed incident at a junction. The bill was not slow.',               cost:8 },
+  { emoji:'🪟', title:'Window stuck',        body:'Electric window jammed open in November. Fixed. Eventually.',               cost:3 },
+  { emoji:'🔩', title:'Flat tyre',           body:'Caught it on a kerb. Changed it yourself. Still cost you.',                 cost:6, fuelExtra:5 },
+  { emoji:'🍓', title:'Smoothie incident',   body:"Client's smoothie found the seat seam. Difficult to explain to the next passenger.", cost:2 },
+];
+
+// ─── STATE ──────────────────────────────────────────────────
+let driverId   = localStorage.getItem('driverId')   || null;
+let driverNum  = parseInt(localStorage.getItem('driverNumber') || '0');
+let gameState  = null;
+let driverState = null;
+let tripState  = 'idle'; // 'idle' | 'riding' | 'results'
+let pendingOrder = null;
+let nextSurge  = false;
+let lastRenderRound = -1;
+let unsub = null;
+
+// ─── HELPERS ────────────────────────────────────────────────
+function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function fmtEur(v) { return (v >= 0 ? '+€' : '-€') + Math.abs(v).toFixed(2); }
+function fmtBal(v) { return '€' + v.toFixed(2); }
+
+function showToast(msg, duration = 2800) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+// ─── JOIN ────────────────────────────────────────────────────
+window.joinGame = async function() {
+  const num = parseInt(document.getElementById('driverNumInput').value);
+  const err = document.getElementById('joinError');
+  if (!num || num < 1 || num > 99) { err.textContent = 'Enter a number 1–99'; return; }
+  err.textContent = '';
+  driverNum = num;
+  driverId  = 'driver_' + num;
+  localStorage.setItem('driverId', driverId);
+  localStorage.setItem('driverNumber', String(num));
+  await initDriver();
+};
+
+// ─── INIT DRIVER DOC ────────────────────────────────────────
+async function initDriver() {
+  const ref = doc(db, 'drivers', driverId);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) {
+    await setDoc(ref, {
+      number: driverNum,
+      balance: 50,
+      fuel: 100,
+      rating: 100,
+      trips: 0,
+      totalEarnings: 0,
+      tripsSinceWash: 0,
+      lastAccessFeeRound: 0,
+      active: true
+    });
   }
-  return EVENTS[0];
+  showMain();
+  subscribeToGame();
 }
 
-async function maybeFireEvent() {
-  if (gameState.status !== 'round_active') return;
-  if (driverState.status === 'deactivated') return;
-  if (Math.random() > 0.30) return;
-
-  const ev     = pickEvent();
-  const result = await ev.apply();
-  showEventPop(ev.type, ev.title, `${ev.body} ${result}`);
+function showMain() {
+  document.getElementById('joinScreen').style.display = 'none';
+  const ms = document.getElementById('mainScreen');
+  ms.style.display = 'flex';
+  ms.style.flexDirection = 'column';
+  document.getElementById('hdrName').textContent = '#' + driverNum;
 }
 
-// ─── RATING HELPER ────────────────────────────────────────────────────────────
-async function applyRatingDelta(delta, eventMessage) {
-  const newRating = Math.max(0, Math.min(100, (driverState.rating || 100) + delta));
-  const updates   = { rating: newRating };
-  if (newRating < 70) { updates.status = 'deactivated'; }
-  await updateDoc(doc(db, 'drivers', myId), updates);
-  await addDoc(collection(db, 'events'), {
-    type: newRating < 70 ? 'deact' : 'warn',
-    message: newRating < 70
-      ? `🚫 Driver <strong>#${myNum}</strong> deactivated — rating dropped to ${newRating}%`
-      : (eventMessage || `Driver <strong>#${myNum}</strong> rating → ${newRating}%`),
-    timestamp: serverTimestamp()
+// ─── SUBSCRIBE ──────────────────────────────────────────────
+function subscribeToGame() {
+  const gameRef   = doc(db, 'game', 'state');
+  const driverRef = doc(db, 'drivers', driverId);
+
+  if (unsub) unsub();
+  let gameSnap = null, driverSnap = null;
+
+  const tryRender = () => { if (gameSnap && driverSnap) render(gameSnap, driverSnap); };
+
+  onSnapshot(gameRef, snap => {
+    gameState = snap.data() || {};
+    gameSnap = snap;
+    tryRender();
+  });
+  onSnapshot(driverRef, snap => {
+    driverState = snap.data() || {};
+    driverSnap = snap;
+    tryRender();
   });
 }
 
-// ─── EVENT POP ────────────────────────────────────────────────────────────────
-let popTimer = null;
-function showEventPop(type, title, body) {
-  const el = document.getElementById('eventPop');
-  el.className = `${type}`;
-  document.getElementById('popTitle').textContent = title;
-  document.getElementById('popBody').textContent  = body;
-  el.classList.add('show');
-  if (popTimer) clearTimeout(popTimer);
-  popTimer = setTimeout(() => el.classList.remove('show'), 3500);
+// ─── RENDER ─────────────────────────────────────────────────
+function render(gameSnap, driverSnap) {
+  if (!gameState || !driverState) return;
+
+  const fuel    = driverState.fuel    || 0;
+  const balance = driverState.balance || 0;
+  const rating  = driverState.rating  || 100;
+  const trips   = driverState.trips   || 0;
+  const tripsSinceWash = driverState.tripsSinceWash || 0;
+  const round   = gameState.round || 0;
+  const status  = gameState.status || 'waiting';
+
+  // Header
+  document.getElementById('hdrRound').textContent = round || '—';
+
+  // Stats
+  const balEl = document.getElementById('statBalance');
+  balEl.textContent = fmtBal(balance);
+  balEl.className = 'stat-value ' + (balance >= 20 ? 'green' : balance >= 8 ? 'orange' : 'red');
+
+  const ratEl = document.getElementById('statRating');
+  ratEl.textContent = Math.round(rating) + '%';
+  ratEl.className = 'stat-value ' + (rating >= 80 ? 'green' : rating >= 60 ? 'orange' : 'red');
+
+  document.getElementById('statTrips').textContent = trips;
+
+  // Fuel bar
+  const fuelFill = document.getElementById('fuelFill');
+  fuelFill.style.width = fuel + '%';
+  fuelFill.style.background = fuel > 50 ? 'var(--green)' : fuel > 25 ? 'var(--orange)' : 'var(--red)';
+  document.getElementById('fuelPct').textContent = Math.round(fuel) + '%';
+
+  // Refuel button glow when fuel < 30
+  const btnRefuel = document.getElementById('btnRefuel');
+  btnRefuel.className = 'action-btn' + (fuel < 30 ? ' glow-orange' : '');
+
+  // Wash button glow when tripsSinceWash >= 5
+  const btnWash = document.getElementById('btnWash');
+  btnWash.className = 'action-btn' + (tripsSinceWash >= 5 ? ' glow-green' : '');
+
+  // Debt trap check
+  const suspended = balance < 4 && fuel < 30;
+  document.getElementById('suspendedOverlay').className =
+    'suspended-overlay' + (suspended ? ' active' : '');
+
+  // Round change: apply access fee
+  if (status === 'active' && round > 0) {
+    maybeApplyAccessFee(round, balance);
+  }
+
+  // Main content — don't overwrite if riding or showing results
+  if (tripState === 'riding' || tripState === 'results') return;
+
+  renderMain(status, round, balance, fuel, rating, trips);
 }
+
+async function maybeApplyAccessFee(round, balance) {
+  const lastFeeRound = driverState.lastAccessFeeRound || 0;
+  if (lastFeeRound >= round) return;
+  const ref = doc(db, 'drivers', driverId);
+  try {
+    await updateDoc(ref, {
+      balance: increment(-2),
+      lastAccessFeeRound: round
+    });
+    // Also track in game state
+    const gameRef = doc(db, 'game', 'state');
+    await updateDoc(gameRef, { accessFeesRevenue: increment(2) });
+    showToast('⚠️ Platform access fee: −€2');
+  } catch(e) { console.warn('Access fee error', e); }
+}
+
+function renderMain(status, round, balance, fuel, rating, trips) {
+  const c = document.getElementById('mainContent');
+
+  if (status === 'ended') {
+    const emoji = balance >= 60 ? '🏆' : balance >= 40 ? '😊' : balance >= 20 ? '😅' : '😬';
+    c.innerHTML = `
+      <div class="ended-card">
+        <div class="ended-emoji">${emoji}</div>
+        <div class="ended-title">Game Over</div>
+        <div class="ended-sub">Final Balance</div>
+        <div class="ended-final">${fmtBal(balance)}</div>
+        <div class="ended-sub">Rating: ${Math.round(rating)}% · Trips: ${trips}</div>
+      </div>`;
+    return;
+  }
+
+  if (status === 'waiting' || round === 0) {
+    c.innerHTML = `
+      <div class="waiting-card">
+        <div class="waiting-emoji">🚗</div>
+        <div class="waiting-title">Waiting for Round to Start</div>
+        <div class="waiting-sub">The instructor will start the round shortly</div>
+        <div class="dot-pulse"><span></span><span></span><span></span></div>
+      </div>`;
+    return;
+  }
+
+  if (status === 'between') {
+    c.innerHTML = `
+      <div class="between-card">
+        <div style="font-size:32px">☕</div>
+        <div style="font-size:15px;font-weight:600">Round ${round} Complete</div>
+        <div style="font-size:13px;color:var(--dim)">Waiting for next round…</div>
+      </div>`;
+    return;
+  }
+
+  // Active round — check if order ready
+  if (pendingOrder && status === 'active') {
+    renderOrderCard(pendingOrder);
+    return;
+  }
+
+  if (status === 'active') {
+    // Generate order with a small delay on round change
+    if (round !== lastRenderRound) {
+      lastRenderRound = round;
+      c.innerHTML = `
+        <div class="waiting-card">
+          <div class="waiting-emoji">📡</div>
+          <div class="waiting-title">Looking for orders…</div>
+          <div class="dot-pulse"><span></span><span></span><span></span></div>
+        </div>`;
+      setTimeout(maybeGenerateOrder, 800 + Math.random() * 1200);
+    }
+  }
+}
+
+// ─── ORDER GENERATION ───────────────────────────────────────
+function maybeGenerateOrder() {
+  if (tripState !== 'idle') return;
+  const fuel    = driverState.fuel    || 0;
+  const balance = driverState.balance || 0;
+  if (balance < 4 && fuel < 30) return; // suspended
+
+  // Pick scenario (40% chance)
+  const scenario = Math.random() < 0.40 ? pick(SCENARIOS) : null;
+
+  // Distance 2–18 km
+  const distance = rand(2, 18);
+  const isSurge  = nextSurge;
+  nextSurge = false;
+
+  // Fare: base 3 + 1.5/km, surge ×1.8
+  const baseFare = +(3 + distance * 1.5).toFixed(2);
+  const fare     = isSurge ? +(baseFare * 1.8).toFixed(2) : baseFare;
+
+  // Commission (25%)
+  const commission = +(fare * 0.25).toFixed(2);
+  const earnings   = +(fare - commission).toFixed(2);
+
+  // Difficult customer 15%
+  const isDifficult = Math.random() < 0.15;
+
+  pendingOrder = { scenario, distance, fare, earnings, isSurge, isDifficult };
+  if (scenario && scenario.surge) nextSurge = true;
+
+  renderOrderCard(pendingOrder);
+}
+
+function renderOrderCard(order) {
+  if (tripState !== 'idle') return;
+  const { scenario, distance, isSurge, isDifficult } = order;
+  const c = document.getElementById('mainContent');
+  const scenarioHtml = scenario ? `
+    <div class="order-difficult">
+      <strong>${scenario.emoji} ${scenario.title}:</strong> ${scenario.body}
+    </div>` : '';
+  const difficultHtml = isDifficult ? `
+    <div class="order-difficult" style="border-left-color:var(--red)">
+      ⚠️ Note: Customer has specific preferences. Proceed carefully.
+    </div>` : '';
+  const surgeHtml = isSurge ? `<div style="font-size:11px;color:var(--orange);margin-top:3px">🔥 Surge pricing active</div>` : '';
+
+  c.innerHTML = `
+    <div class="order-card">
+      <div class="order-header">
+        <div class="order-emoji">📦</div>
+        <div>
+          <div class="order-title">Ride Request</div>
+          <div class="order-scenario">Client is waiting</div>
+        </div>
+      </div>
+      ${scenarioHtml}
+      ${difficultHtml}
+      <div class="order-meta">
+        <div class="order-meta-item">
+          <div class="order-meta-label">Distance</div>
+          <div class="order-meta-value">${distance} km</div>
+        </div>
+        <div class="order-meta-item">
+          <div class="order-meta-label">Fare</div>
+          <div class="order-meta-value" style="color:var(--muted);font-style:italic">hidden</div>
+          ${surgeHtml}
+        </div>
+      </div>
+      <button class="order-accept" onclick="acceptOrder()">Accept Ride</button>
+      <button class="order-skip" onclick="skipOrder()">Skip</button>
+    </div>`;
+}
+
+window.skipOrder = function() {
+  pendingOrder = null;
+  lastRenderRound = -1; // Force re-render with new order
+  const c = document.getElementById('mainContent');
+  c.innerHTML = `
+    <div class="waiting-card">
+      <div class="waiting-emoji">🔄</div>
+      <div class="waiting-title">Looking for another order…</div>
+      <div class="dot-pulse"><span></span><span></span><span></span></div>
+    </div>`;
+  setTimeout(maybeGenerateOrder, 1000 + Math.random() * 1500);
+};
+
+// ─── ACCEPT & RIDE ──────────────────────────────────────────
+window.acceptOrder = function() {
+  if (!pendingOrder || tripState !== 'idle') return;
+  tripState = 'riding';
+
+  const { scenario, distance, isDifficult } = pendingOrder;
+  const rideDuration = (2.5 + (distance / 18) * 2.5) * 1000; // 2.5s–5s in ms
+  const rideSec = (rideDuration / 1000).toFixed(1);
+
+  // Set CSS variable for animation
+  document.documentElement.style.setProperty('--ride-duration', rideSec + 's');
+
+  const destNames = ['Airport','City Centre','Old Town','Train Station','Shopping Mall','University','Business Park','Hotel','Hospital','Stadium'];
+  const dest = pick(destNames);
+
+  const scenarioLine = scenario ? `<div class="ride-dest">${scenario.emoji} ${scenario.title}</div>` : '';
+
+  document.getElementById('mainContent').innerHTML = `
+    <div class="ride-card">
+      <div class="ride-title">En route to ${dest}…</div>
+      <div class="ride-road">
+        <div class="ride-road-line"></div>
+        <div class="ride-car">🚗</div>
+      </div>
+      ${scenarioLine}
+      <div class="ride-dest">${distance} km · ~${Math.round(rideDuration/1000)}s</div>
+    </div>`;
+
+  setTimeout(() => completeTrip(scenario, isDifficult), rideDuration);
+};
+
+// ─── COMPLETE TRIP ──────────────────────────────────────────
+async function completeTrip(scenario, isDifficult) {
+  tripState = 'results';
+  const order = pendingOrder;
+  pendingOrder = null;
+  const { distance, fare, earnings, isSurge } = order;
+
+  const fuel    = driverState.fuel    || 0;
+  const balance = driverState.balance || 0;
+  const tripsSinceWash = driverState.tripsSinceWash || 0;
+  const isDirty = tripsSinceWash >= 5;
+  const tipsPolicy = gameState.tipsPolicy || 'drivers';
+
+  // Fuel cost
+  let fuelCost = 5 + distance * 2;
+  if (scenario && scenario.fuelExtra) fuelCost += scenario.fuelExtra;
+  fuelCost = Math.min(fuelCost, 100);
+
+  // Scenario repair cost
+  let repairCost = 0;
+  if (scenario && scenario.cost) repairCost = scenario.cost;
+
+  // Star probabilities
+  // Base: 0★:25%, 1★:20%, 3★:55%
+  // Dirty: 0★:20%, 1★:35%, 3★:45%
+  // Scenario modifiers
+  let p1 = isDirty ? 35 : 20;
+  let p3 = isDirty ? 45 : 55;
+  if (scenario) {
+    p1 = Math.min(p1 + (scenario.oneStarBoost || 0), 85);
+    p3 = Math.max(p3 + (scenario.threeStarBoost || 0), 5);
+  }
+  let p0 = 100 - p1 - p3;
+  if (p0 < 5) { p0 = 5; p3 = 100 - p1 - p0; }
+
+  let stars;
+  if (isDifficult && Math.random() < 0.15) {
+    stars = 1; // force 1★ for difficult customer
+  } else {
+    const r = rand(1, 100);
+    if (r <= p0) stars = 0;
+    else if (r <= p0 + p1) stars = 1;
+    else stars = 3;
+  }
+
+  // Rating change
+  let ratingDelta = 0;
+  if (stars === 0) { ratingDelta = 0; }
+  else if (stars === 1) { ratingDelta = -rand(4, 8); }
+  else { ratingDelta = rand(2, 3); }
+
+  const newRating = Math.min(100, Math.max(0, (driverState.rating || 100) + ratingDelta));
+
+  // Comment
+  const comment = stars === 0 ? pick(COMMENTS_0) :
+                  stars === 1 ? pick(COMMENTS_1) : pick(COMMENTS_3);
+
+  // Star display
+  const starEmoji = stars === 0 ? '😶 No rating' :
+                    stars === 1 ? '⭐' : '⭐⭐⭐';
+
+  // Tip
+  let tipAmount = 0;
+  let showTip   = false;
+  if (scenario && scenario.tip) {
+    tipAmount = rand(1, 4);
+    showTip = true;
+  }
+
+  // Earnings after repairs
+  const netEarnings = earnings - repairCost;
+
+  // Fuel delta
+  const newFuel = Math.max(0, fuel - fuelCost);
+  const fuelDelta = -fuelCost;
+
+  // Balance changes
+  let balanceDelta = netEarnings;
+  if (tipsPolicy === 'drivers' && showTip) balanceDelta += tipAmount;
+  const newBalance = balance + balanceDelta;
+
+  // Build results rows
+  const rows = [];
+  rows.push({ label: `Distance`, value: `${distance} km`, cls: '' });
+  rows.push({ label: `Rating`, value: `${starEmoji}`, cls: '', comment });
+  if (ratingDelta !== 0) {
+    rows.push({ label: `Rating %`, value: (ratingDelta > 0 ? '+' : '') + ratingDelta + '%', cls: ratingDelta > 0 ? 'green' : 'red' });
+  }
+  rows.push({ label: `Fare (after 25% commission)`, value: `€${earnings.toFixed(2)}`, cls: 'green' });
+  if (repairCost > 0) {
+    rows.push({ label: `🔧 ${scenario.emoji} Repair cost`, value: `-€${repairCost.toFixed(2)}`, cls: 'red' });
+  }
+  if (showTip) {
+    rows.push({ label: `Tip from client`, value: `+€${tipAmount.toFixed(2)} 🎉`, cls: tipsPolicy === 'drivers' ? 'green' : 'orange' });
+  }
+  rows.push({ label: `Fuel used`, value: `${Math.round(fuelCost)}%`, cls: 'orange' });
+  rows.push({ label: `Balance`, value: `€${newBalance.toFixed(2)}`, cls: newBalance >= 0 ? 'green' : 'red' });
+
+  // Render results card
+  const c = document.getElementById('mainContent');
+  const rowsHtml = rows.map((r,i) => `
+    <div class="result-row" id="rrow${i}">
+      <div class="result-label">${r.label}${r.comment ? `<div class="result-comment">"${r.comment}"</div>` : ''}</div>
+      <div class="result-value ${r.cls}">${r.value}</div>
+    </div>`).join('');
+
+  c.innerHTML = `
+    <div class="results-card">
+      <div class="results-header">Trip Complete</div>
+      ${rowsHtml}
+      <button class="results-dismiss" id="dismissBtn" onclick="dismissResults()">Next order →</button>
+    </div>`;
+
+  // Sequential reveal
+  rows.forEach((_, i) => {
+    setTimeout(() => {
+      const el = document.getElementById('rrow' + i);
+      if (el) el.classList.add('visible');
+    }, 300 + i * 350);
+  });
+  setTimeout(() => {
+    const btn = document.getElementById('dismissBtn');
+    if (btn) btn.classList.add('visible');
+  }, 300 + rows.length * 350 + 200);
+
+  // Show tip toast (silent theft if platform captures)
+  if (showTip) {
+    setTimeout(() => {
+      if (tipsPolicy === 'platform') {
+        showToast(`+€${tipAmount.toFixed(2)} tip 🎉`);
+      } else {
+        showToast(`+€${tipAmount.toFixed(2)} tip received 🎉`);
+      }
+    }, 300 + 4 * 350);
+  }
+
+  // Firestore updates
+  const ref = doc(db, 'drivers', driverId);
+  const updateData = {
+    fuel: Math.round(newFuel),
+    balance: +newBalance.toFixed(2),
+    rating: +newRating.toFixed(1),
+    trips: increment(1),
+    totalEarnings: increment(+earnings.toFixed(2)),
+    tripsSinceWash: increment(1)
+  };
+  await updateDoc(ref, updateData).catch(e => console.warn('Trip update failed', e));
+
+  // Platform stats
+  const gameRef = doc(db, 'game', 'state');
+  const gameUpdate = { commissionsRevenue: increment(+earnings.toFixed(2)) };
+  if (showTip && tipsPolicy === 'platform') {
+    gameUpdate.platformTipsRevenue = increment(tipAmount);
+  }
+  if (showTip && tipsPolicy === 'drivers') {
+    gameUpdate.driverTipsTotal = increment(tipAmount);
+  }
+  await updateDoc(gameRef, gameUpdate).catch(e => console.warn('Platform update failed', e));
+}
+
+window.dismissResults = function() {
+  tripState = 'idle';
+  lastRenderRound = -1;
+  const c = document.getElementById('mainContent');
+  c.innerHTML = `
+    <div class="waiting-card">
+      <div class="waiting-emoji">📡</div>
+      <div class="waiting-title">Looking for orders…</div>
+      <div class="dot-pulse"><span></span><span></span><span></span></div>
+    </div>`;
+  setTimeout(maybeGenerateOrder, 600 + Math.random() * 800);
+};
+
+// ─── REFUEL ─────────────────────────────────────────────────
+window.doRefuel = async function() {
+  const balance = driverState.balance || 0;
+  const fuel    = driverState.fuel    || 0;
+  if (balance < 4) { showToast('Not enough balance to refuel (€4)'); return; }
+  if (fuel >= 95)  { showToast('Fuel already full'); return; }
+  const ref = doc(db, 'drivers', driverId);
+  await updateDoc(ref, { balance: increment(-4), fuel: 100 });
+  showToast('⛽ Refuelled! −€4');
+};
+
+// ─── CAR WASH ───────────────────────────────────────────────
+window.doWash = async function() {
+  const balance = driverState.balance || 0;
+  if (balance < 1) { showToast('Not enough balance (€1)'); return; }
+  const ref = doc(db, 'drivers', driverId);
+  await updateDoc(ref, { balance: increment(-1), tripsSinceWash: 0 });
+  showToast('🚿 Car washed! −€1');
+};
+
+// ─── AUTO-REJOIN ─────────────────────────────────────────────
+if (driverId) initDriver();
 </script>
 </body>
 </html>

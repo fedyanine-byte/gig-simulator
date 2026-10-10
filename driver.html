@@ -539,25 +539,48 @@ window.joinGame = async function() {
   driverId  = 'driver_' + num;
   localStorage.setItem('driverId', driverId);
   localStorage.setItem('driverNumber', String(num));
-  await initDriver();
+  await initDriver(true);
 };
 
+// ─── RESET TO JOIN SCREEN ───────────────────────────────────
+function resetToJoin() {
+  localStorage.removeItem('driverId');
+  localStorage.removeItem('driverNumber');
+  driverId  = null;
+  driverNum = 0;
+  tripState = 'idle';
+  pendingOrder = null;
+  lastRenderRound = -1;
+  document.getElementById('mainScreen').style.display = 'none';
+  document.getElementById('joinScreen').style.display = '';
+  document.getElementById('driverNumInput').value = '';
+  document.getElementById('joinError').textContent = '';
+}
+
 // ─── INIT DRIVER DOC ────────────────────────────────────────
-async function initDriver() {
-  const ref = doc(db, 'drivers', driverId);
+// isNew=true when called from joinGame (first time), false on auto-rejoin
+async function initDriver(isNew = false) {
+  const ref  = doc(db, 'drivers', driverId);
   const snap = await getDoc(ref);
   if (!snap.exists()) {
-    await setDoc(ref, {
-      number: driverNum,
-      balance: 50,
-      fuel: 100,
-      rating: 100,
-      trips: 0,
-      totalEarnings: 0,
-      tripsSinceWash: 0,
-      lastAccessFeeRound: 0,
-      active: true
-    });
+    if (isNew) {
+      // First join: create fresh driver document
+      await setDoc(ref, {
+        number: driverNum,
+        balance: 50,
+        fuel: 100,
+        rating: 100,
+        trips: 0,
+        totalEarnings: 0,
+        tripsSinceWash: 0,
+        lastAccessFeeRound: 0,
+        active: true
+      });
+    } else {
+      // Auto-rejoin but doc is gone — game was reset, show join screen
+      resetToJoin();
+      return;
+    }
   }
   showMain();
   subscribeToGame();
@@ -587,6 +610,11 @@ function subscribeToGame() {
     tryRender();
   });
   onSnapshot(driverRef, snap => {
+    if (!snap.exists()) {
+      // Game was reset while we were online — go back to join screen
+      resetToJoin();
+      return;
+    }
     driverState = snap.data() || {};
     driverSnap = snap;
     tryRender();
@@ -639,7 +667,7 @@ function render(gameSnap, driverSnap) {
     'suspended-overlay' + (suspended ? ' active' : '');
 
   // Round change: apply access fee
-  if (status === 'active' && round > 0) {
+  if (status === 'round_active' && round > 0) {
     maybeApplyAccessFee(round, balance);
   }
 
@@ -668,7 +696,7 @@ async function maybeApplyAccessFee(round, balance) {
 function renderMain(status, round, balance, fuel, rating, trips) {
   const c = document.getElementById('mainContent');
 
-  if (status === 'ended') {
+  if (status === 'game_ended') {
     const emoji = balance >= 60 ? '🏆' : balance >= 40 ? '😊' : balance >= 20 ? '😅' : '😬';
     c.innerHTML = `
       <div class="ended-card">
@@ -681,7 +709,7 @@ function renderMain(status, round, balance, fuel, rating, trips) {
     return;
   }
 
-  if (status === 'waiting' || round === 0) {
+  if (status === 'lobby' || round === 0) {
     c.innerHTML = `
       <div class="waiting-card">
         <div class="waiting-emoji">🚗</div>
@@ -692,7 +720,7 @@ function renderMain(status, round, balance, fuel, rating, trips) {
     return;
   }
 
-  if (status === 'between') {
+  if (status === 'round_ended') {
     c.innerHTML = `
       <div class="between-card">
         <div style="font-size:32px">☕</div>
@@ -703,12 +731,12 @@ function renderMain(status, round, balance, fuel, rating, trips) {
   }
 
   // Active round — check if order ready
-  if (pendingOrder && status === 'active') {
+  if (pendingOrder && status === 'round_active') {
     renderOrderCard(pendingOrder);
     return;
   }
 
-  if (status === 'active') {
+  if (status === 'round_active') {
     // Generate order with a small delay on round change
     if (round !== lastRenderRound) {
       lastRenderRound = round;
@@ -988,9 +1016,12 @@ async function completeTrip(scenario, isDifficult) {
   };
   await updateDoc(ref, updateData).catch(e => console.warn('Trip update failed', e));
 
-  // Platform stats
+  // Platform stats  (commission already computed above: fare * 0.25)
   const gameRef = doc(db, 'game', 'state');
-  const gameUpdate = { commissionsRevenue: increment(+earnings.toFixed(2)) };
+  const gameUpdate = {
+    commissionsRevenue:  increment(commission),       // what platform earns
+    driverFareEarnings:  increment(+earnings.toFixed(2))  // what driver earns from fares
+  };
   if (showTip && tipsPolicy === 'platform') {
     gameUpdate.platformTipsRevenue = increment(tipAmount);
   }

@@ -519,12 +519,35 @@
   </div>
 </div>
 
+<!-- DRIVER ECONOMICS ROW -->
+<div class="stats-bar" id="driverEconBar" style="grid-template-columns:repeat(4,1fr);background:var(--bg);border-top:1px solid var(--border);padding:8px 20px">
+  <div class="stat-cell">
+    <div class="stat-label" style="color:var(--muted)">🚗 Drivers Earned</div>
+    <div class="stat-value" id="statDriverEarned" style="color:var(--green)">€0.00</div>
+  </div>
+  <div class="stat-cell">
+    <div class="stat-label" style="color:var(--muted)">💸 Tips → Drivers</div>
+    <div class="stat-value" id="statDriverTips" style="color:var(--green)">€0.00</div>
+  </div>
+  <div class="stat-cell">
+    <div class="stat-label" style="color:var(--muted)">🔧 Drivers Spent</div>
+    <div class="stat-value" id="statDriverSpent" style="color:var(--red)">€0.00</div>
+  </div>
+  <div class="stat-cell">
+    <div class="stat-label" style="color:var(--muted)">📊 Net (avg/driver)</div>
+    <div class="stat-value" id="statDriverNet">€0.00</div>
+  </div>
+</div>
+
 <!-- MAIN -->
 <div class="main">
 
   <!-- EVENTS FEED -->
   <div class="events-panel">
-    <div class="panel-header">Live Events</div>
+    <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center">
+      <span>Live Events</span>
+      <button onclick="clearEvents()" style="font-size:11px;padding:3px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--dim);cursor:pointer">🗑 Clear</button>
+    </div>
     <div class="events-list" id="eventsList">
       <div class="event-item">
         <span class="event-time">—</span>
@@ -576,7 +599,7 @@
 import { initializeApp }    from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getFirestore, doc, setDoc, getDoc, onSnapshot,
          collection, addDoc, updateDoc, serverTimestamp,
-         query, orderBy, limit, writeBatch, increment
+         query, orderBy, limit, writeBatch, increment, getDocs
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const firebaseConfig = {
@@ -634,6 +657,7 @@ async function ensureGameState() {
       accessFeesRevenue: 0,
       platformTipsRevenue: 0,
       driverTipsTotal: 0,
+      driverFareEarnings: 0,
       tipsPolicy: 'drivers',
       ordersCompleted: 0
     });
@@ -764,6 +788,24 @@ function renderStats() {
   document.getElementById('statTipsCaptured').textContent = `€${(gameState.platformTipsRevenue || 0).toFixed(2)}`;
   document.getElementById('statRating').textContent       = avgRating != null ? `${avgRating}%` : '—';
   document.getElementById('statOrders').textContent       = gameState.ordersCompleted || 0;
+
+  // Driver economics row
+  const driverCount    = drivers.length;
+  const fareEarnings   = gameState.driverFareEarnings || 0;
+  const tipsToDrivers  = gameState.driverTipsTotal    || 0;
+  const totalEarned    = fareEarnings + tipsToDrivers;
+  const sumBalance     = drivers.reduce((s, d) => s + (d.balance || 0), 0);
+  const driversNet     = sumBalance - driverCount * 50;  // starting balance was €50
+  const driversSpent   = totalEarned - driversNet;
+  const avgNet         = driverCount > 0 ? driversNet / driverCount : 0;
+  const netColor       = avgNet >= 0 ? 'var(--green)' : 'var(--red)';
+
+  document.getElementById('statDriverEarned').textContent = `€${totalEarned.toFixed(2)}`;
+  document.getElementById('statDriverTips').textContent   = `€${tipsToDrivers.toFixed(2)}`;
+  document.getElementById('statDriverSpent').textContent  = `€${Math.max(0, driversSpent).toFixed(2)}`;
+  const netEl = document.getElementById('statDriverNet');
+  netEl.textContent  = `€${avgNet.toFixed(2)}`;
+  netEl.style.color  = netColor;
 }
 
 // ─── RENDER: DRIVERS TABLE ────────────────────────────────────────────────────
@@ -916,21 +958,26 @@ async function sendAnnounce() {
   toast('Announcement sent to all drivers');
 }
 
+async function clearEvents() {
+  const evSnap = await getDocs(collection(db, 'events'));
+  if (evSnap.empty) return;
+  const b = writeBatch(db);
+  evSnap.docs.forEach(d => b.delete(d.ref));
+  await b.commit();
+}
+
 async function resetGame() {
   if (!confirm('Reset the game? This clears all drivers and events.')) return;
 
   // Clear drivers
-  const driverSnap = await getDoc(doc(db, 'drivers', '__dummy__')).catch(() => null);
   const batch = writeBatch(db);
-
   Object.keys(driversData).forEach(id => {
     batch.delete(doc(db, 'drivers', id));
   });
-
-  // Clear events (collect first)
-  const { getDocs: gd, query: q2, collection: col2 } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-
   await batch.commit();
+
+  // Clear events
+  await clearEvents();
 
   // Reset game state
   await setDoc(doc(db, 'game', 'state'), {
@@ -945,12 +992,14 @@ async function resetGame() {
     accessFeesRevenue: 0,
     platformTipsRevenue: 0,
     driverTipsTotal: 0,
+    driverFareEarnings: 0,
     tipsPolicy: 'drivers',
     ordersCompleted: 0
   });
 
   toast('Game reset. Ready for a new session.');
 }
+window.clearEvents = clearEvents;
 
 // ─── CAPTURE TIPS TOGGLE ─────────────────────────────────────────────────────
 async function toggleCaptureTips() {

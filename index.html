@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CapyUber — Gig Economy Simulation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #06090F;
+    --surface: #0D1520;
+    --surface2: #162030;
+    --border: #1E2D40;
+    --yellow: #F5BE00;
+    --yellow-lt: #FFD040;
+    --green: #10B981;
+    --orange: #F59E0B;
+    --red: #EF4444;
+    --text: #E2EAF4;
+    --muted: #4B6280;
+    --dim: #7C94AD;
+    --font: 'DM Sans', system-ui, sans-serif;
+    --mono: 'DM Mono', 'SF Mono', monospace;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+  }
+
+  .logo-wrap {
+    margin-bottom: 32px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .logo-wrap img {
+    width: min(340px, 80vw);
+    height: auto;
+    border-radius: 16px;
+  }
+
+  h1 {
+    font-size: clamp(22px, 4vw, 36px);
+    font-weight: 600;
+    line-height: 1.2;
+    text-align: center;
+    margin-bottom: 10px;
+  }
+
+  .subtitle {
+    color: var(--dim);
+    font-size: 15px;
+    text-align: center;
+    margin-bottom: 44px;
+    max-width: 400px;
+    line-height: 1.6;
+  }
+
+  .cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    width: 100%;
+    max-width: 600px;
+  }
+
+  @media (max-width: 480px) {
+    .cards { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px 20px;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s, background 0.15s;
+  }
+
+  .card:hover { background: var(--surface2); }
+  .card.platform:hover { border-color: var(--yellow); }
+  .card.driver:hover   { border-color: var(--green); }
+
+  .card-icon {
+    width: 40px; height: 40px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 16px;
+    font-size: 20px;
+  }
+
+  .card.platform .card-icon { background: rgba(245,190,0,0.12); }
+  .card.driver   .card-icon { background: rgba(16,185,129,0.12); }
+
+  .card-label {
+    font-size: 11px;
+    font-family: var(--mono);
+    letter-spacing: 0.1em;
+    margin-bottom: 5px;
+  }
+
+  .card.platform .card-label { color: var(--yellow); }
+  .card.driver   .card-label { color: var(--green); }
+
+  .card h2 { font-size: 18px; font-weight: 600; margin-bottom: 7px; }
+
+  .card p { font-size: 13px; color: var(--dim); line-height: 1.55; flex: 1; }
+
+  .card-arrow {
+    margin-top: 16px;
+    font-size: 16px;
+    color: var(--muted);
+    transition: transform 0.15s;
+  }
+  .card:hover .card-arrow { transform: translateX(4px); }
+
+  .footer {
+    margin-top: 40px;
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.7;
+  }
+</style>
+</head>
+<body>
+
+<div class="logo-wrap">
+  <img src="logo.png" alt="CapyUber — Chill Rides Anytime">
+</div>
+
+<h1>Who are you in this economy?</h1>
+<p class="subtitle">A live classroom simulation of algorithmic labor markets. Choose your role to begin.</p>
+
+<div class="cards">
+  <a class="card platform" href="platform.html">
+    <div class="card-icon">🖥</div>
+    <div class="card-label">Instructor</div>
+    <h2>Platform Dashboard</h2>
+    <p>Control the game: set take rates, start rounds, push announcements, and watch the data in real time.</p>
+    <div class="card-arrow">→</div>
+  </a>
+
+  <a class="card driver" href="driver.html">
+    <div class="card-icon">🚗</div>
+    <div class="card-label">Student</div>
+    <h2>Join as Driver</h2>
+    <p>Open on your phone. Accept orders, manage fuel, survive random events — watch your rating define your fate.</p>
+    <div class="card-arrow">→</div>
+  </a>
+</div>
+
+<div class="footer">
+  4 rounds · 20 minutes · real-time sync via Firebase<br>
+  RSU Digital Economy · Lecture 6 — Gig Economy &amp; Labor Markets
+</div>
+
+</body>
+</html>

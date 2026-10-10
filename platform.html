@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CapyUber — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #06090F;
+    --surface: #0D1520;
+    --surface2: #162030;
+    --border: #1E2D40;
+    --blue: #D4A000;
+    --blue-lt: #F5BE00;
+    --green: #10B981;
+    --orange: #F59E0B;
+    --red: #EF4444;
+    --text: #E2EAF4;
+    --muted: #4B6280;
+    --dim: #7C94AD;
+    --font: 'DM Sans', system-ui, sans-serif;
+    --mono: 'DM Mono', 'SF Mono', monospace;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ─── HEADER ─── */
+  header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 24px;
+    height: 56px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+
+  .logo {
+    font-family: var(--mono);
+    font-size: 14px;
+    letter-spacing: 0.08em;
+    color: var(--blue-lt);
+  }
+
+  .logo span { color: var(--dim); }
+
+  .header-spacer { flex: 1; }
+
+  .round-badge {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 12px;
+    color: var(--dim);
+  }
+
+  .round-badge strong { color: var(--text); }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: background 0.3s;
+  }
+  .status-dot.live { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 2s infinite; }
+  .status-dot.ended { background: var(--orange); }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+  .status-label {
+    font-size: 12px;
+    font-family: var(--mono);
+    color: var(--dim);
+  }
+
+  /* ─── TIMER ─── */
+  .timer-bar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 24px;
+    gap: 40px;
+    flex-shrink: 0;
+  }
+
+  .timer-display {
+    font-family: var(--mono);
+    font-size: 64px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    min-width: 180px;
+    text-align: center;
+    transition: color 0.3s;
+  }
+  .timer-display.warn { color: var(--orange); }
+  .timer-display.danger { color: var(--red); animation: blink 0.8s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* ─── CONTROLS ─── */
+  .controls-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    flex-shrink: 0;
+  }
+
+  .controls-label {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+  }
+
+  .take-rate-group {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .take-rate-btn {
+    background: none;
+    border: none;
+    border-right: 1px solid var(--border);
+    color: var(--dim);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+  }
+  .take-rate-btn:last-child { border-right: none; }
+  .take-rate-btn:hover { background: var(--surface2); color: var(--text); }
+  .take-rate-btn.active { background: var(--blue); color: #fff; }
+
+  .sep { width: 1px; height: 24px; background: var(--border); }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 18px;
+    border-radius: 8px;
+    font-family: var(--font);
+    font-size: 14px;
+    font-weight: 500;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: opacity 0.12s, background 0.12s;
+    white-space: nowrap;
+  }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .btn-primary { background: var(--blue); color: #111; border-color: var(--blue); }
+  .btn-primary:hover:not(:disabled) { background: var(--blue-lt); }
+
+  .btn-ghost { background: var(--surface2); color: var(--text); border-color: var(--border); }
+  .btn-ghost:hover:not(:disabled) { border-color: var(--dim); }
+
+  .btn-danger { background: rgba(239,68,68,0.12); color: var(--red); border-color: rgba(239,68,68,0.25); }
+  .btn-danger:hover:not(:disabled) { background: rgba(239,68,68,0.2); }
+
+  .btn-green { background: rgba(16,185,129,0.12); color: var(--green); border-color: rgba(16,185,129,0.25); }
+  .btn-green:hover:not(:disabled) { background: rgba(16,185,129,0.2); }
+
+  .controls-spacer { flex: 1; }
+
+  /* ─── STATS ─── */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .stat-cell {
+    background: var(--surface);
+    padding: 14px 20px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    margin-bottom: 4px;
+  }
+
+  .stat-value {
+    font-family: var(--mono);
+    font-size: 24px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .stat-value.green { color: var(--green); }
+  .stat-value.blue  { color: var(--blue-lt); }
+
+  /* ─── MAIN LAYOUT ─── */
+  .main {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 0;
+    flex: 1;
+    min-height: 0;
+    border-top: none;
+  }
+
+  /* ─── EVENTS FEED ─── */
+  .events-panel {
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .panel-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    flex-shrink: 0;
+  }
+
+  .events-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0;
+  }
+
+  .event-item {
+    padding: 8px 16px;
+    border-bottom: 1px solid rgba(30,45,64,0.5);
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--dim);
+  }
+
+  .event-item .event-time {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .event-item.type-earn   .event-body { color: var(--green); }
+  .event-item.type-warn   .event-body { color: var(--orange); }
+  .event-item.type-deact  .event-body { color: var(--red); }
+  .event-item.type-system .event-body { color: var(--blue-lt); }
+  .event-item.type-announce .event-body { color: var(--orange); font-weight: 500; }
+
+  /* ─── DRIVERS TABLE ─── */
+  .drivers-panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .table-wrap {
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  thead th {
+    position: sticky;
+    top: 0;
+    background: var(--surface);
+    padding: 10px 16px;
+    text-align: left;
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid rgba(30,45,64,0.6);
+    transition: background 0.1s;
+  }
+  tbody tr:hover { background: var(--surface2); }
+  tbody tr.deactivated { opacity: 0.45; }
+
+  td {
+    padding: 10px 16px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  td.num {
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+
+  .driver-num {
+    font-family: var(--mono);
+    font-weight: 500;
+    color: var(--text);
+    font-size: 14px;
+  }
+
+  .mini-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .bar-track {
+    flex: 1;
+    height: 4px;
+    background: var(--surface2);
+    border-radius: 2px;
+    max-width: 80px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.4s;
+  }
+
+  .bar-fill.green { background: var(--green); }
+  .bar-fill.orange { background: var(--orange); }
+  .bar-fill.red { background: var(--red); }
+
+  .status-pill {
+    font-size: 11px;
+    font-family: var(--mono);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+  .status-pill.active     { background: rgba(16,185,129,0.12); color: var(--green); }
+  .status-pill.deactivated{ background: rgba(239,68,68,0.12);  color: var(--red); }
+  .status-pill.waiting    { background: var(--surface2); color: var(--muted); }
+
+  .empty-drivers {
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  /* ─── MODAL ─── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(6,9,15,0.85);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px 28px 24px;
+    width: 460px;
+    max-width: calc(100vw - 32px);
+  }
+
+  .modal h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .modal p {
+    font-size: 13px;
+    color: var(--dim);
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+
+  .modal textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 14px;
+    padding: 12px 14px;
+    resize: vertical;
+    min-height: 80px;
+    outline: none;
+    margin-bottom: 16px;
+  }
+  .modal textarea:focus { border-color: var(--blue); }
+
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+  }
+
+  /* ─── TOAST ─── */
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 13px;
+    color: var(--text);
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none;
+    z-index: 200;
+  }
+  #toast.show { opacity: 1; transform: translateY(0); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">CapyUber <span>Dashboard</span></div>
+  <div class="header-spacer"></div>
+  <div class="round-badge">Round <strong id="hdrRound">—</strong> / 4</div>
+  <div class="status-dot" id="statusDot"></div>
+  <div class="status-label" id="statusLabel">Connecting…</div>
+</header>
+
+<!-- TIMER -->
+<div class="timer-bar">
+  <div class="timer-display" id="timerDisplay">2:00</div>
+</div>
+
+<!-- CONTROLS -->
+<div class="controls-bar">
+  <span class="controls-label">Take Rate</span>
+  <div class="take-rate-group">
+    <button class="take-rate-btn active" data-rate="20" onclick="setTakeRate(20)">20%</button>
+    <button class="take-rate-btn" data-rate="25" onclick="setTakeRate(25)">25%</button>
+    <button class="take-rate-btn" data-rate="30" onclick="setTakeRate(30)">30%</button>
+  </div>
+  <div class="sep"></div>
+  <button class="btn btn-primary" id="btnStart" onclick="startRound()">▶ Start Round 1</button>
+  <button class="btn btn-ghost" id="btnEndRound" onclick="endRound()" disabled>End Round</button>
+  <button class="btn btn-ghost" id="btnAnnounce" onclick="openAnnounce()">📢 Announce</button>
+  <div class="controls-spacer"></div>
+  <button class="btn btn-danger" onclick="resetGame()">↺ New Game</button>
+</div>
+
+<!-- STATS -->
+<div class="stats-bar">
+  <div class="stat-cell">
+    <div class="stat-label">Drivers Online</div>
+    <div class="stat-value blue" id="statDrivers">0</div>
+  </div>
+  <div class="stat-cell">
+    <div class="stat-label">Platform Revenue</div>
+    <div class="stat-value green" id="statRevenue">€0.00</div>
+  </div>
+  <div class="stat-cell">
+    <div class="stat-label">Avg. Rating</div>
+    <div class="stat-value" id="statRating">—</div>
+  </div>
+  <div class="stat-cell">
+    <div class="stat-label">Orders Completed</div>
+    <div class="stat-value" id="statOrders">0</div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- EVENTS FEED -->
+  <div class="events-panel">
+    <div class="panel-header">Live Events</div>
+    <div class="events-list" id="eventsList">
+      <div class="event-item">
+        <span class="event-time">—</span>
+        <span class="event-body" style="color:var(--muted)">Waiting for game to start…</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- DRIVERS TABLE -->
+  <div class="drivers-panel">
+    <div class="panel-header">Drivers</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Rating</th>
+            <th>Balance</th>
+            <th>Fuel</th>
+            <th>Orders</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="driversBody">
+          <tr><td colspan="6" class="empty-drivers">No drivers connected yet.<br>Students open driver.html on their phones.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- ANNOUNCE MODAL -->
+<div class="modal-overlay" id="announceModal">
+  <div class="modal">
+    <h3>📢 Push Announcement</h3>
+    <p>This message appears on every driver's screen immediately. Use it to narrate what the platform is doing.</p>
+    <textarea id="announceText" placeholder="e.g. New pricing policy in effect. Take rate now 30%."></textarea>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeAnnounce()">Cancel</button>
+      <button class="btn btn-primary" onclick="sendAnnounce()">Send to All Drivers</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script type="module">
+import { initializeApp }    from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, doc, setDoc, getDoc, onSnapshot,
+         collection, addDoc, updateDoc, serverTimestamp,
+         query, orderBy, limit, writeBatch, increment
+} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAdoc6mHAO4xpywSs1wM3J34hxCG2tkWiI",
+  authDomain: "platform-economy.firebaseapp.com",
+  projectId: "platform-economy",
+  storageBucket: "platform-economy.firebasestorage.app",
+  messagingSenderId: "865626286029",
+  appId: "1:865626286029:web:9a4b8b49300c15d9e68684"
+};
+
+const app = initializeApp(firebaseConfig, 'platform');
+const db  = getFirestore(app);
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let gameState = {
+  round: 0,
+  maxRounds: 4,
+  status: 'lobby',
+  takeRate: 20,
+  timerEnd: null,
+  announcement: '',
+  platformRevenue: 0,
+  ordersCompleted: 0
+};
+
+let driversData = {};
+let timerInterval = null;
+let currentRound = 0;
+
+// ─── EXPOSE FUNCTIONS TO window ──────────────────────────────────────────────
+window.setTakeRate   = setTakeRate;
+window.startRound    = startRound;
+window.endRound      = endRound;
+window.openAnnounce  = openAnnounce;
+window.closeAnnounce = closeAnnounce;
+window.sendAnnounce  = sendAnnounce;
+window.resetGame     = resetGame;
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+async function ensureGameState() {
+  const ref = doc(db, 'game', 'state');
+  const snap = await getDoc(ref);
+  if (!snap.exists()) {
+    await setDoc(ref, {
+      round: 0,
+      maxRounds: 4,
+      status: 'lobby',
+      takeRate: 20,
+      timerEnd: null,
+      announcement: '',
+      platformRevenue: 0,
+      ordersCompleted: 0
+    });
+  }
+}
+
+ensureGameState().catch(console.error);
+
+// ─── FIRESTORE LISTENERS ──────────────────────────────────────────────────────
+// Game state
+onSnapshot(doc(db, 'game', 'state'), snap => {
+  if (!snap.exists()) return;
+  gameState = snap.data();
+  renderGameState();
+});
+
+// Drivers
+onSnapshot(collection(db, 'drivers'), snap => {
+  snap.docChanges().forEach(change => {
+    if (change.type === 'removed') {
+      delete driversData[change.doc.id];
+    } else {
+      driversData[change.doc.id] = { id: change.doc.id, ...change.doc.data() };
+    }
+  });
+  renderDrivers();
+  renderStats();
+});
+
+// Events feed (last 60, newest first)
+onSnapshot(
+  query(collection(db, 'events'), orderBy('timestamp', 'desc'), limit(60)),
+  snap => renderEvents(snap.docs.map(d => d.data()))
+);
+
+// ─── RENDER: GAME STATE ───────────────────────────────────────────────────────
+function renderGameState() {
+  const { status, round, takeRate } = gameState;
+
+  document.getElementById('hdrRound').textContent = round || '—';
+
+  // Status dot + label
+  const dot = document.getElementById('statusDot');
+  const lbl = document.getElementById('statusLabel');
+  dot.className = 'status-dot';
+  if (status === 'round_active') { dot.classList.add('live'); lbl.textContent = 'Round Active'; }
+  else if (status === 'lobby')   { lbl.textContent = 'Lobby'; }
+  else if (status === 'round_ended') { lbl.textContent = 'Round Ended'; }
+  else if (status === 'game_ended') { dot.classList.add('ended'); lbl.textContent = 'Game Over'; }
+
+  // Take rate buttons
+  document.querySelectorAll('.take-rate-btn').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.rate) === takeRate);
+  });
+
+  // Control buttons
+  const btnStart    = document.getElementById('btnStart');
+  const btnEndRound = document.getElementById('btnEndRound');
+
+  if (status === 'lobby' || status === 'round_ended') {
+    const nextRound = (round || 0) + 1;
+    btnStart.textContent = nextRound === 1 ? '▶ Start Round 1'
+      : `▶ Start Round ${nextRound}`;
+    btnStart.disabled    = (round >= 4 && status === 'round_ended') || status === 'game_ended';
+    btnEndRound.disabled = true;
+  } else if (status === 'round_active') {
+    btnStart.disabled    = true;
+    btnEndRound.disabled = false;
+  } else if (status === 'game_ended') {
+    btnStart.textContent = 'Game Complete';
+    btnStart.disabled    = true;
+    btnEndRound.disabled = true;
+  }
+
+  // Timer
+  startTimerDisplay();
+}
+
+// ─── TIMER ────────────────────────────────────────────────────────────────────
+function startTimerDisplay() {
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+
+  if (gameState.status !== 'round_active' || !gameState.timerEnd) {
+    document.getElementById('timerDisplay').textContent = '2:00';
+    document.getElementById('timerDisplay').className = 'timer-display';
+    return;
+  }
+
+  function tick() {
+    const now  = Date.now();
+    const end  = gameState.timerEnd.toMillis ? gameState.timerEnd.toMillis() : gameState.timerEnd * 1000;
+    const diff = Math.max(0, Math.ceil((end - now) / 1000));
+    const m    = Math.floor(diff / 60);
+    const s    = diff % 60;
+    const el   = document.getElementById('timerDisplay');
+    el.textContent = `${m}:${String(s).padStart(2, '0')}`;
+    el.className   = 'timer-display';
+    if (diff <= 10)      el.classList.add('danger');
+    else if (diff <= 30) el.classList.add('warn');
+
+    if (diff === 0) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+  }
+  tick();
+  timerInterval = setInterval(tick, 500);
+}
+
+// ─── RENDER: STATS ────────────────────────────────────────────────────────────
+function renderStats() {
+  const drivers = Object.values(driversData);
+  const active  = drivers.filter(d => d.status !== 'deactivated');
+  const ratings = active.map(d => d.rating).filter(r => r != null);
+  const avgRating = ratings.length ? Math.round(ratings.reduce((a,b) => a+b, 0) / ratings.length) : null;
+
+  document.getElementById('statDrivers').textContent = `${active.length}/${drivers.length}`;
+  document.getElementById('statRevenue').textContent = `€${(gameState.platformRevenue || 0).toFixed(2)}`;
+  document.getElementById('statRating').textContent  = avgRating != null ? `${avgRating}%` : '—';
+  document.getElementById('statOrders').textContent  = gameState.ordersCompleted || 0;
+}
+
+// ─── RENDER: DRIVERS TABLE ────────────────────────────────────────────────────
+function renderDrivers() {
+  const tbody = document.getElementById('driversBody');
+  const drivers = Object.values(driversData).sort((a, b) => (a.driverNumber || 0) - (b.driverNumber || 0));
+
+  if (drivers.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty-drivers">No drivers connected yet.<br>Students open driver.html on their phones.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = drivers.map(d => {
+    const rating  = d.rating ?? 100;
+    const fuel    = d.fuel   ?? 100;
+    const balance = d.balance ?? 0;
+    const isDeact = d.status === 'deactivated';
+
+    const ratingColor = rating >= 85 ? 'green' : rating >= 70 ? 'orange' : 'red';
+    const fuelColor   = fuel   >= 30 ? 'green' : fuel   >= 10 ? 'orange' : 'red';
+
+    const statusClass = isDeact ? 'deactivated' : (gameState.status === 'round_active' ? 'active' : 'waiting');
+    const statusLabel = isDeact ? 'Deactivated'  : (gameState.status === 'round_active' ? 'Active'  : 'Waiting');
+
+    return `<tr class="${isDeact ? 'deactivated' : ''}">
+      <td><span class="driver-num">#${d.driverNumber || '?'}</span></td>
+      <td>
+        <div class="mini-bar">
+          <div class="bar-track"><div class="bar-fill ${ratingColor}" style="width:${rating}%"></div></div>
+          <span class="num" style="color:var(--${ratingColor})">${rating}%</span>
+        </div>
+      </td>
+      <td class="num" style="color:var(--green)">€${balance.toFixed(2)}</td>
+      <td>
+        <div class="mini-bar">
+          <div class="bar-track"><div class="bar-fill ${fuelColor}" style="width:${fuel}%"></div></div>
+          <span class="num" style="color:var(--${fuelColor})">${fuel}%</span>
+        </div>
+      </td>
+      <td class="num">${d.ordersCompleted || 0}</td>
+      <td><span class="status-pill ${statusClass}">${statusLabel}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── RENDER: EVENTS ───────────────────────────────────────────────────────────
+function renderEvents(events) {
+  const list = document.getElementById('eventsList');
+  if (events.length === 0) {
+    list.innerHTML = `<div class="event-item"><span class="event-body" style="color:var(--muted)">Waiting for game to start…</span></div>`;
+    return;
+  }
+
+  list.innerHTML = events.map(ev => {
+    const ts  = ev.timestamp ? new Date(ev.timestamp.toMillis ? ev.timestamp.toMillis() : ev.timestamp * 1000) : new Date();
+    const time = ts.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const type = ev.type || 'info';
+    return `<div class="event-item type-${type}">
+      <span class="event-time">${time}</span>
+      <span class="event-body">${ev.message || ''}</span>
+    </div>`;
+  }).join('');
+}
+
+// ─── ACTIONS ──────────────────────────────────────────────────────────────────
+async function setTakeRate(rate) {
+  await updateDoc(doc(db, 'game', 'state'), { takeRate: rate });
+  await addDoc(collection(db, 'events'), {
+    type: 'system',
+    message: `⚙️ Platform adjusted take rate to <strong>${rate}%</strong>`,
+    timestamp: serverTimestamp()
+  });
+  toast(`Take rate set to ${rate}%`);
+}
+
+async function startRound() {
+  const nextRound = (gameState.round || 0) + 1;
+  if (nextRound > 4) return;
+
+  const durationMs = 2 * 60 * 1000; // 2 minutes
+  const timerEnd   = new Date(Date.now() + durationMs);
+
+  await setDoc(doc(db, 'game', 'state'), {
+    ...gameState,
+    round:  nextRound,
+    status: 'round_active',
+    timerEnd,
+    announcement: ''
+  });
+
+  await addDoc(collection(db, 'events'), {
+    type: 'system',
+    message: `🟢 <strong>Round ${nextRound} started</strong> — Take rate: ${gameState.takeRate}%`,
+    timestamp: serverTimestamp()
+  });
+
+  // Auto-end after timer
+  setTimeout(async () => {
+    const snap = await getDoc(doc(db, 'game', 'state'));
+    if (snap.exists() && snap.data().status === 'round_active' && snap.data().round === nextRound) {
+      await endRound();
+    }
+  }, durationMs + 2000);
+
+  toast(`Round ${nextRound} started!`);
+}
+
+async function endRound() {
+  const rnd    = gameState.round;
+  const isLast = rnd >= 4;
+
+  await updateDoc(doc(db, 'game', 'state'), {
+    status:   isLast ? 'game_ended' : 'round_ended',
+    timerEnd: null
+  });
+
+  await addDoc(collection(db, 'events'), {
+    type: 'system',
+    message: isLast
+      ? `🏁 <strong>Game Over</strong> — Platform collected €${(gameState.platformRevenue || 0).toFixed(2)}`
+      : `⏹ <strong>Round ${rnd} ended</strong>`,
+    timestamp: serverTimestamp()
+  });
+
+  toast(isLast ? 'Game complete!' : `Round ${rnd} ended`);
+}
+
+function openAnnounce() {
+  document.getElementById('announceModal').classList.add('open');
+  document.getElementById('announceText').focus();
+}
+
+function closeAnnounce() {
+  document.getElementById('announceModal').classList.remove('open');
+  document.getElementById('announceText').value = '';
+}
+
+async function sendAnnounce() {
+  const text = document.getElementById('announceText').value.trim();
+  if (!text) return;
+
+  await updateDoc(doc(db, 'game', 'state'), { announcement: text });
+  await addDoc(collection(db, 'events'), {
+    type: 'announce',
+    message: `📢 <strong>Platform announcement:</strong> ${text}`,
+    timestamp: serverTimestamp()
+  });
+
+  closeAnnounce();
+  toast('Announcement sent to all drivers');
+}
+
+async function resetGame() {
+  if (!confirm('Reset the game? This clears all drivers and events.')) return;
+
+  // Clear drivers
+  const driverSnap = await getDoc(doc(db, 'drivers', '__dummy__')).catch(() => null);
+  const batch = writeBatch(db);
+
+  Object.keys(driversData).forEach(id => {
+    batch.delete(doc(db, 'drivers', id));
+  });
+
+  // Clear events (collect first)
+  const { getDocs: gd, query: q2, collection: col2 } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+
+  await batch.commit();
+
+  // Reset game state
+  await setDoc(doc(db, 'game', 'state'), {
+    round: 0,
+    maxRounds: 4,
+    status: 'lobby',
+    takeRate: 20,
+    timerEnd: null,
+    announcement: '',
+    platformRevenue: 0,
+    ordersCompleted: 0
+  });
+
+  toast('Game reset. Ready for a new session.');
+}
+
+// ─── TOAST ────────────────────────────────────────────────────────────────────
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// Dismiss modal on overlay click
+document.getElementById('announceModal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeAnnounce();
+});
+
+// Update stats whenever game state changes too
+setInterval(() => renderStats(), 5000);
+</script>
+</body>
+</html>

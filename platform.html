@@ -702,7 +702,7 @@ function startTimerDisplay() {
   if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
 
   if (gameState.status !== 'round_active' || !gameState.timerEnd) {
-    document.getElementById('timerDisplay').textContent = '2:00';
+    document.getElementById('timerDisplay').textContent = '3:00';
     document.getElementById('timerDisplay').className = 'timer-display';
     return;
   }
@@ -818,7 +818,7 @@ async function startRound() {
   const nextRound = (gameState.round || 0) + 1;
   if (nextRound > 4) return;
 
-  const durationMs = 2 * 60 * 1000; // 2 minutes
+  const durationMs = 3 * 60 * 1000; // 3 minutes
   const timerEnd   = new Date(Date.now() + durationMs);
 
   await setDoc(doc(db, 'game', 'state'), {

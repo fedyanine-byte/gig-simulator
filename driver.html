@@ -215,7 +215,7 @@
     transform: translateY(-50%);
   }
   .ride-car {
-    position: absolute; top: 50%; transform: translateY(-50%);
+    position: absolute; top: 50%; transform: translateY(-50%) scaleX(-1);
     font-size: 24px; left: -5%;
     animation: driveAcross var(--ride-duration) linear forwards;
   }
@@ -302,9 +302,9 @@
 <div id="joinScreen">
   <div class="join-logo">🚗</div>
   <div class="join-title">CapyUber Driver</div>
-  <div class="join-sub">Enter your driver number to start</div>
-  <input class="join-input" id="driverNumInput" type="number" min="1" max="99"
-         placeholder="e.g. 7" inputmode="numeric">
+  <div class="join-sub">Enter your name to start</div>
+  <input class="join-input" id="driverNameInput" type="text"
+         placeholder="e.g. Anna" maxlength="20" autocomplete="off">
   <button class="join-btn" onclick="joinGame()">Start Driving</button>
   <div class="join-error" id="joinError"></div>
 </div>
@@ -507,7 +507,7 @@ const SCENARIOS = [
 
 // ─── STATE ──────────────────────────────────────────────────
 let driverId   = localStorage.getItem('driverId')   || null;
-let driverNum  = parseInt(localStorage.getItem('driverNumber') || '0');
+let driverName = localStorage.getItem('driverName') || null;
 let gameState  = null;
 let driverState = null;
 let tripState  = 'idle'; // 'idle' | 'riding' | 'results'
@@ -531,29 +531,30 @@ function showToast(msg, duration = 2800) {
 
 // ─── JOIN ────────────────────────────────────────────────────
 window.joinGame = async function() {
-  const num = parseInt(document.getElementById('driverNumInput').value);
+  const raw = document.getElementById('driverNameInput').value.trim();
   const err = document.getElementById('joinError');
-  if (!num || num < 1 || num > 99) { err.textContent = 'Enter a number 1–99'; return; }
+  if (!raw || raw.length < 2) { err.textContent = 'Enter your name (at least 2 characters)'; return; }
   err.textContent = '';
-  driverNum = num;
-  driverId  = 'driver_' + num;
-  localStorage.setItem('driverId', driverId);
-  localStorage.setItem('driverNumber', String(num));
+  driverName = raw;
+  driverId   = 'driver_' + raw.toLowerCase().replace(/[^a-z0-9]/g, '_');
+  localStorage.setItem('driverId',   driverId);
+  localStorage.setItem('driverName', driverName);
   await initDriver(true);
 };
 
 // ─── RESET TO JOIN SCREEN ───────────────────────────────────
 function resetToJoin() {
   localStorage.removeItem('driverId');
-  localStorage.removeItem('driverNumber');
-  driverId  = null;
-  driverNum = 0;
-  tripState = 'idle';
+  localStorage.removeItem('driverName');
+  driverId   = null;
+  driverName = null;
+  tripState  = 'idle';
   pendingOrder = null;
-  lastRenderRound = -1;
+  lastRenderRound   = -1;
+  lastSickCheckRound = 0;
   document.getElementById('mainScreen').style.display = 'none';
   document.getElementById('joinScreen').style.display = '';
-  document.getElementById('driverNumInput').value = '';
+  document.getElementById('driverNameInput').value = '';
   document.getElementById('joinError').textContent = '';
 }
 
@@ -566,7 +567,7 @@ async function initDriver(isNew = false) {
     if (isNew) {
       // First join: create fresh driver document
       await setDoc(ref, {
-        number: driverNum,
+        name: driverName,
         balance: 50,
         fuel: 100,
         rating: 100,
@@ -574,6 +575,7 @@ async function initDriver(isNew = false) {
         totalEarnings: 0,
         tripsSinceWash: 0,
         lastAccessFeeRound: 0,
+        sickRound: 0,
         active: true
       });
     } else {
@@ -591,7 +593,7 @@ function showMain() {
   const ms = document.getElementById('mainScreen');
   ms.style.display = 'flex';
   ms.style.flexDirection = 'column';
-  document.getElementById('hdrName').textContent = '#' + driverNum;
+  document.getElementById('hdrName').textContent = driverName || '?';
 }
 
 // ─── SUBSCRIBE ──────────────────────────────────────────────
@@ -666,15 +668,31 @@ function render(gameSnap, driverSnap) {
   document.getElementById('suspendedOverlay').className =
     'suspended-overlay' + (suspended ? ' active' : '');
 
-  // Round change: apply access fee
+  // Round change: apply access fee + maybe go sick
   if (status === 'round_active' && round > 0) {
     maybeApplyAccessFee(round, balance);
+    maybeGoSick(round);
   }
 
   // Main content — don't overwrite if riding or showing results
   if (tripState === 'riding' || tripState === 'results') return;
 
   renderMain(status, round, balance, fuel, rating, trips);
+}
+
+// ─── SICK DAY ────────────────────────────────────────────────
+// 10% chance, once per game. Driver loses the round but still pays access fee.
+let lastSickCheckRound = 0;
+async function maybeGoSick(round) {
+  if (lastSickCheckRound >= round) return;    // already checked this round
+  lastSickCheckRound = round;
+  const sickRound = driverState.sickRound || 0;
+  if (sickRound > 0) return;                  // already sick once this game
+  if (Math.random() >= 0.10) return;          // 10% chance
+  const ref = doc(db, 'drivers', driverId);
+  try {
+    await updateDoc(ref, { sickRound: round });
+  } catch(e) { console.warn('Sick day error', e); }
 }
 
 async function maybeApplyAccessFee(round, balance) {
@@ -730,6 +748,21 @@ function renderMain(status, round, balance, fuel, rating, trips) {
     return;
   }
 
+  // Sick day — driver can't work this round (but access fee already deducted)
+  const sickRound = driverState.sickRound || 0;
+  if (sickRound === round && status === 'round_active') {
+    if (round !== lastRenderRound) {
+      lastRenderRound = round;
+      c.innerHTML = `
+        <div class="waiting-card">
+          <div class="waiting-emoji">🤒</div>
+          <div class="waiting-title">You're sick today</div>
+          <div class="waiting-sub">Can't take orders this round.<br>Platform fee was still charged.</div>
+        </div>`;
+    }
+    return;
+  }
+
   // Active round — check if order ready
   if (pendingOrder && status === 'round_active') {
     renderOrderCard(pendingOrder);
@@ -754,9 +787,13 @@ function renderMain(status, round, balance, fuel, rating, trips) {
 // ─── ORDER GENERATION ───────────────────────────────────────
 function maybeGenerateOrder() {
   if (tripState !== 'idle') return;
-  const fuel    = driverState.fuel    || 0;
-  const balance = driverState.balance || 0;
-  if (balance < 4 && fuel < 30) return; // suspended
+  if (!gameState || gameState.status !== 'round_active') return; // round not active
+  const fuel      = driverState.fuel      || 0;
+  const balance   = driverState.balance   || 0;
+  const sickRound = driverState.sickRound || 0;
+  if (fuel <= 0) return;                                          // no fuel — must refuel
+  if (balance < 4 && fuel < 30) return;                          // suspended
+  if (sickRound > 0 && sickRound === (gameState.round || 0)) return; // sick today
 
   // Pick scenario (40% chance)
   const scenario = Math.random() < 0.40 ? pick(SCENARIOS) : null;
@@ -840,6 +877,7 @@ window.skipOrder = function() {
 // ─── ACCEPT & RIDE ──────────────────────────────────────────
 window.acceptOrder = function() {
   if (!pendingOrder || tripState !== 'idle') return;
+  if (!gameState || gameState.status !== 'round_active') return; // round ended mid-display
   tripState = 'riding';
 
   const { scenario, distance, isDifficult } = pendingOrder;

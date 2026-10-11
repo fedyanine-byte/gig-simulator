@@ -563,7 +563,7 @@
       <table>
         <thead>
           <tr>
-            <th>#</th>
+            <th>Name</th>
             <th>Rating</th>
             <th>Balance</th>
             <th>Fuel</th>
@@ -811,7 +811,7 @@ function renderStats() {
 // ─── RENDER: DRIVERS TABLE ────────────────────────────────────────────────────
 function renderDrivers() {
   const tbody = document.getElementById('driversBody');
-  const drivers = Object.values(driversData).sort((a, b) => (a.driverNumber || 0) - (b.driverNumber || 0));
+  const drivers = Object.values(driversData).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
   if (drivers.length === 0) {
     tbody.innerHTML = `<tr><td colspan="6" class="empty-drivers">No drivers connected yet.<br>Students open driver.html on their phones.</td></tr>`;
@@ -827,11 +827,12 @@ function renderDrivers() {
     const ratingColor = rating >= 85 ? 'green' : rating >= 70 ? 'orange' : 'red';
     const fuelColor   = fuel   >= 30 ? 'green' : fuel   >= 10 ? 'orange' : 'red';
 
-    const statusClass = isDeact ? 'deactivated' : (gameState.status === 'round_active' ? 'active' : 'waiting');
-    const statusLabel = isDeact ? 'Deactivated'  : (gameState.status === 'round_active' ? 'Active'  : 'Waiting');
+    const isSick = (d.sickRound || 0) === (gameState.round || 0) && gameState.status === 'round_active';
+    const statusClass = isDeact ? 'deactivated' : isSick ? 'waiting' : (gameState.status === 'round_active' ? 'active' : 'waiting');
+    const statusLabel = isDeact ? 'Deactivated'  : isSick ? '🤒 Sick'  : (gameState.status === 'round_active' ? 'Active'  : 'Waiting');
 
     return `<tr class="${isDeact ? 'deactivated' : ''}">
-      <td><span class="driver-num">#${d.driverNumber || '?'}</span></td>
+      <td><span class="driver-num">${d.name || (d.number ? '#' + d.number : '?')}</span></td>
       <td>
         <div class="mini-bar">
           <div class="bar-track"><div class="bar-fill ${ratingColor}" style="width:${rating}%"></div></div>

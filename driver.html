@@ -550,8 +550,9 @@ function resetToJoin() {
   driverName = null;
   tripState  = 'idle';
   pendingOrder = null;
-  lastRenderRound   = -1;
+  lastRenderRound    = -1;
   lastSickCheckRound = 0;
+  lastAppliedFeeRound = 0;
   document.getElementById('mainScreen').style.display = 'none';
   document.getElementById('joinScreen').style.display = '';
   document.getElementById('driverNameInput').value = '';
@@ -681,6 +682,10 @@ function render(gameSnap, driverSnap) {
 }
 
 // ─── SICK DAY ────────────────────────────────────────────────
+// Local guard: prevent double-charging access fee when both onSnapshot callbacks
+// fire before Firestore has returned the updated lastAccessFeeRound value.
+let lastAppliedFeeRound = 0;
+
 // 10% chance, once per game. Driver loses the round but still pays access fee.
 let lastSickCheckRound = 0;
 async function maybeGoSick(round) {
@@ -696,6 +701,11 @@ async function maybeGoSick(round) {
 }
 
 async function maybeApplyAccessFee(round, balance) {
+  // Local guard first — prevents double-charge when both onSnapshot callbacks
+  // fire before Firestore has returned the updated lastAccessFeeRound.
+  if (lastAppliedFeeRound >= round) return;
+  lastAppliedFeeRound = round;
+  // Also check Firestore field in case of page reload
   const lastFeeRound = driverState.lastAccessFeeRound || 0;
   if (lastFeeRound >= round) return;
   const ref = doc(db, 'drivers', driverId);
@@ -1054,11 +1064,15 @@ async function completeTrip(scenario, isDifficult) {
   };
   await updateDoc(ref, updateData).catch(e => console.warn('Trip update failed', e));
 
-  // Platform stats  (commission already computed above: fare * 0.25)
+  // Recompute commission from fare (was not stored in pendingOrder)
+  const commission = +(fare - earnings).toFixed(2);
+
+  // Platform stats
   const gameRef = doc(db, 'game', 'state');
   const gameUpdate = {
-    commissionsRevenue:  increment(commission),       // what platform earns
-    driverFareEarnings:  increment(+earnings.toFixed(2))  // what driver earns from fares
+    commissionsRevenue: increment(commission),
+    driverFareEarnings: increment(+earnings.toFixed(2)),
+    ordersCompleted:    increment(1)
   };
   if (showTip && tipsPolicy === 'platform') {
     gameUpdate.platformTipsRevenue = increment(tipAmount);

@@ -85,6 +85,14 @@
   .hdr-name span { color: var(--text); font-weight: 600; }
   .hdr-round { font-family: var(--mono); font-size: 13px; color: var(--dim); }
   .hdr-round strong { color: var(--blue-lt); }
+  .hdr-timer {
+    font-family: var(--mono); font-size: 20px; font-weight: 500;
+    color: var(--blue-lt); letter-spacing: .03em; min-width: 52px; text-align: center;
+    transition: color .3s;
+  }
+  .hdr-timer.warn  { color: var(--orange); }
+  .hdr-timer.urgent { color: var(--red); animation: pulse-timer .6s ease-in-out infinite alternate; }
+  @keyframes pulse-timer { from { opacity: 1; } to { opacity: .5; } }
 
   /* STATUS BAR */
   .status-bar {
@@ -314,6 +322,7 @@
   <!-- Header -->
   <div class="hdr">
     <div class="hdr-name">Driver <span id="hdrName">—</span></div>
+    <div class="hdr-timer" id="hdrTimer"></div>
     <div class="hdr-round">Round <strong id="hdrRound">—</strong> / 10</div>
   </div>
 
@@ -515,6 +524,7 @@ let pendingOrder = null;
 let nextSurge  = false;
 let lastRenderRound = -1;
 let unsub = null;
+let driverTimerInterval = null;
 
 // ─── HELPERS ────────────────────────────────────────────────
 function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
@@ -553,6 +563,7 @@ function resetToJoin() {
   lastRenderRound    = -1;
   lastSickCheckRound = 0;
   lastAppliedFeeRound = 0;
+  if (driverTimerInterval) { clearInterval(driverTimerInterval); driverTimerInterval = null; }
   document.getElementById('mainScreen').style.display = 'none';
   document.getElementById('joinScreen').style.display = '';
   document.getElementById('driverNameInput').value = '';
@@ -624,6 +635,36 @@ function subscribeToGame() {
   });
 }
 
+// ─── ROUND TIMER (driver) ───────────────────────────────────
+function syncDriverTimer() {
+  const el = document.getElementById('hdrTimer');
+  if (!el) return;
+
+  const status   = gameState.status  || '';
+  const timerEnd = gameState.timerEnd || null;
+
+  // Stop any running ticker first
+  if (driverTimerInterval) { clearInterval(driverTimerInterval); driverTimerInterval = null; }
+
+  if (status !== 'round_active' || !timerEnd) {
+    el.textContent = '';
+    el.className = 'hdr-timer';
+    return;
+  }
+
+  function tick() {
+    const end  = timerEnd.toMillis ? timerEnd.toMillis() : timerEnd * 1000;
+    const diff = Math.max(0, Math.ceil((end - Date.now()) / 1000));
+    const m    = Math.floor(diff / 60);
+    const s    = diff % 60;
+    el.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+    el.className   = 'hdr-timer' + (diff <= 15 ? ' urgent' : diff <= 30 ? ' warn' : '');
+    if (diff === 0) { clearInterval(driverTimerInterval); driverTimerInterval = null; }
+  }
+  tick();
+  driverTimerInterval = setInterval(tick, 500);
+}
+
 // ─── RENDER ─────────────────────────────────────────────────
 function render(gameSnap, driverSnap) {
   if (!gameState || !driverState) return;
@@ -638,6 +679,7 @@ function render(gameSnap, driverSnap) {
 
   // Header
   document.getElementById('hdrRound').textContent = round || '—';
+  syncDriverTimer();
 
   // Stats
   const balEl = document.getElementById('statBalance');
@@ -673,6 +715,11 @@ function render(gameSnap, driverSnap) {
   if (status === 'round_active' && round > 0) {
     maybeApplyAccessFee(round, balance);
     maybeGoSick(round);
+  }
+
+  // Clear stale order when round ends so old orders don't reappear next round
+  if (status !== 'round_active' && pendingOrder) {
+    pendingOrder = null;
   }
 
   // Main content — don't overwrite if riding or showing results
@@ -933,6 +980,64 @@ async function completeTrip(scenario, isDifficult) {
   let fuelCost = 5 + distance * 2;
   if (scenario && scenario.fuelExtra) fuelCost += scenario.fuelExtra;
   fuelCost = Math.min(fuelCost, 100);
+
+  // ── BREAKDOWN: not enough fuel to finish this trip ──────────
+  if (fuel < fuelCost) {
+    const ratingHit = -rand(10, 18);
+    const newRatingBD = Math.max(0, (driverState.rating || 100) + ratingHit);
+    const comment = pick([
+      '"Never arrived."', '"Left me stranded!"',
+      '"Ran out of fuel mid-trip???"', '"Worst experience ever."',
+      '"Do not use this driver."'
+    ]);
+
+    const c = document.getElementById('mainContent');
+    const bdRows = [
+      { label: 'Trip', value: `${distance} km`, cls: '' },
+      { label: 'Breakdown', value: '⛽ Out of fuel', cls: 'red' },
+      { label: 'Fare earned', value: '€0.00', cls: 'red' },
+      { label: 'Rating', value: '⭐ (forced)', cls: 'red', comment: comment.replace(/^"|"$/g,'') },
+      { label: 'Rating %', value: `${ratingHit}%`, cls: 'red' },
+      { label: 'Fuel left', value: '0%', cls: 'red' },
+    ];
+    const bdHtml = bdRows.map((r, i) => `
+      <div class="result-row" id="brow${i}">
+        <div class="result-label">${r.label}${r.comment ? `<div class="result-comment">"${r.comment}"</div>` : ''}</div>
+        <div class="result-value ${r.cls}">${r.value}</div>
+      </div>`).join('');
+
+    c.innerHTML = `
+      <div class="results-card">
+        <div class="results-header" style="color:var(--red)">⛽ Breakdown!</div>
+        <p style="color:var(--dim);font-size:13px;margin:-8px 0 12px;text-align:center">
+          You ran out of fuel mid-trip.<br>No fare paid. Passenger abandoned.
+        </p>
+        ${bdHtml}
+        <button class="results-dismiss" id="dismissBtn" onclick="dismissResults()">Continue →</button>
+      </div>`;
+
+    bdRows.forEach((_, i) => {
+      setTimeout(() => {
+        const el = document.getElementById('brow' + i);
+        if (el) el.classList.add('visible');
+      }, 250 + i * 300);
+    });
+    setTimeout(() => {
+      const btn = document.getElementById('dismissBtn');
+      if (btn) btn.classList.add('visible');
+    }, 250 + bdRows.length * 300 + 150);
+
+    // Firestore: zero fuel, rating hit, count the trip, NO balance change
+    const ref = doc(db, 'drivers', driverId);
+    await updateDoc(ref, {
+      fuel: 0,
+      rating: +newRatingBD.toFixed(1),
+      trips: increment(1),
+      tripsSinceWash: increment(1)
+    }).catch(e => console.warn('Breakdown update failed', e));
+    // Platform gets nothing — trip never completed
+    return;
+  }
 
   // Scenario repair cost
   let repairCost = 0;

@@ -795,7 +795,7 @@ function renderStats() {
   const tipsToDrivers  = gameState.driverTipsTotal    || 0;
   const totalEarned    = fareEarnings + tipsToDrivers;
   const sumBalance     = drivers.reduce((s, d) => s + (d.balance || 0), 0);
-  const driversNet     = sumBalance - driverCount * 50;  // starting balance was €50
+  const driversNet     = sumBalance - driverCount * 30;  // starting balance €30
   const driversSpent   = totalEarned - driversNet;
   const avgNet         = driverCount > 0 ? driversNet / driverCount : 0;
   const netColor       = avgNet >= 0 ? 'var(--green)' : 'var(--red)';

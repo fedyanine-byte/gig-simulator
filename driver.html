@@ -706,8 +706,8 @@ function render(gameSnap, driverSnap) {
   const btnWash = document.getElementById('btnWash');
   btnWash.className = 'action-btn' + (tripsSinceWash >= 5 ? ' glow-green' : '');
 
-  // Debt trap check
-  const suspended = balance < 4 && fuel < 30;
+  // Debt trap check — only show during active round
+  const suspended = status === 'round_active' && balance < 4 && fuel < 30;
   document.getElementById('suspendedOverlay').className =
     'suspended-overlay' + (suspended ? ' active' : '');
 
@@ -1191,6 +1191,22 @@ async function completeTrip(scenario, isDifficult) {
 window.dismissResults = function() {
   tripState = 'idle';
   lastRenderRound = -1;
+
+  // If the round ended while we were in a trip or results screen, render
+  // the correct end-of-round view now — don't blindly show "Looking for orders"
+  const currentStatus = (gameState && gameState.status) || '';
+  if (currentStatus !== 'round_active') {
+    renderMain(
+      currentStatus,
+      (gameState && gameState.round) || 0,
+      (driverState && driverState.balance) || 0,
+      (driverState && driverState.fuel)    || 0,
+      (driverState && driverState.rating)  || 100,
+      (driverState && driverState.trips)   || 0
+    );
+    return;
+  }
+
   const c = document.getElementById('mainContent');
   c.innerHTML = `
     <div class="waiting-card">

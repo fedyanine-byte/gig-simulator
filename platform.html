@@ -886,7 +886,7 @@ async function startRound() {
   const nextRound = (gameState.round || 0) + 1;
   if (nextRound > 10) return;
 
-  const durationMs = 3 * 60 * 1000; // 3 minutes
+  const durationMs = 2 * 60 * 1000; // 2 minutes
   const timerEnd   = new Date(Date.now() + durationMs);
 
   await setDoc(doc(db, 'game', 'state'), {

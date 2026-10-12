@@ -659,7 +659,22 @@ function syncDriverTimer() {
     const s    = diff % 60;
     el.textContent = `${m}:${s.toString().padStart(2, '0')}`;
     el.className   = 'hdr-timer' + (diff <= 15 ? ' urgent' : diff <= 30 ? ' warn' : '');
-    if (diff === 0) { clearInterval(driverTimerInterval); driverTimerInterval = null; }
+    if (diff === 0) {
+      clearInterval(driverTimerInterval);
+      driverTimerInterval = null;
+      el.textContent = '';
+      el.className = 'hdr-timer';
+      // Don't wait for Firestore — show round-ended immediately when timer expires
+      if (tripState === 'idle' && driverState) {
+        renderMain('round_ended',
+          (gameState && gameState.round) || 0,
+          driverState.balance || 0,
+          driverState.fuel    || 0,
+          driverState.rating  || 100,
+          driverState.trips   || 0
+        );
+      }
+    }
   }
   tick();
   driverTimerInterval = setInterval(tick, 500);
@@ -920,7 +935,21 @@ function renderOrderCard(order) {
 
 window.skipOrder = function() {
   pendingOrder = null;
-  lastRenderRound = -1; // Force re-render with new order
+  lastRenderRound = -1;
+
+  const currentStatus = (gameState && gameState.status) || '';
+  if (currentStatus !== 'round_active') {
+    renderMain(
+      currentStatus,
+      (gameState && gameState.round)    || 0,
+      (driverState && driverState.balance) || 0,
+      (driverState && driverState.fuel)    || 0,
+      (driverState && driverState.rating)  || 100,
+      (driverState && driverState.trips)   || 0
+    );
+    return;
+  }
+
   const c = document.getElementById('mainContent');
   c.innerHTML = `
     <div class="waiting-card">
@@ -938,7 +967,7 @@ window.acceptOrder = function() {
   tripState = 'riding';
 
   const { scenario, distance, isDifficult } = pendingOrder;
-  const rideDuration = (2.5 + (distance / 18) * 2.5) * 1000; // 2.5s–5s in ms
+  const rideDuration = (2 + distance * 0.55) * 1000; // 3s (2 km) → 12s (18 km)
   const rideSec = (rideDuration / 1000).toFixed(1);
 
   // Set CSS variable for animation
@@ -1109,7 +1138,7 @@ async function completeTrip(scenario, isDifficult) {
   if (ratingDelta !== 0) {
     rows.push({ label: `Rating %`, value: (ratingDelta > 0 ? '+' : '') + ratingDelta + '%', cls: ratingDelta > 0 ? 'green' : 'red' });
   }
-  rows.push({ label: `Fare (after 25% commission)`, value: `€${earnings.toFixed(2)}`, cls: 'green' });
+  rows.push({ label: `Fare after commission`, value: `€${earnings.toFixed(2)}`, cls: 'green' });
   if (repairCost > 0) {
     rows.push({ label: `🔧 ${scenario.emoji} Repair cost`, value: `-€${repairCost.toFixed(2)}`, cls: 'red' });
   }

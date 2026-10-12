@@ -109,12 +109,18 @@
   .stat-value.red { color: var(--red); }
 
   /* FUEL BAR */
-  .fuel-bar-wrap { padding: 6px 14px 10px; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .fuel-bar-wrap { padding: 6px 14px 8px; background: var(--surface); border-bottom: 1px solid var(--border); }
   .fuel-bar-row { display: flex; align-items: center; gap: 8px; }
   .fuel-label { font-size: 11px; color: var(--muted); min-width: 28px; }
   .fuel-track { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
   .fuel-fill { height: 100%; border-radius: 3px; background: var(--green); transition: width .5s, background .5s; }
   .fuel-pct { font-family: var(--mono); font-size: 11px; color: var(--dim); min-width: 32px; text-align: right; }
+  .rating-row { display: flex; align-items: center; gap: 6px; margin-top: 5px; padding-top: 5px; border-top: 1px solid var(--border); }
+  .rating-lbl { font-size: 11px; color: var(--muted); flex: 1; }
+  .rating-val { font-family: var(--mono); font-size: 12px; font-weight: 500; }
+  .rating-val.green { color: var(--green); }
+  .rating-val.orange { color: var(--orange); }
+  .rating-val.red { color: var(--red); }
 
   /* ACTION BUTTONS ROW */
   .action-row {
@@ -333,12 +339,12 @@
       <div class="stat-value" id="statBalance">€0</div>
     </div>
     <div class="stat-cell">
-      <div class="stat-label">Rating</div>
-      <div class="stat-value" id="statRating">100%</div>
+      <div class="stat-label">Earned</div>
+      <div class="stat-value" id="statEarned">€0</div>
     </div>
     <div class="stat-cell">
-      <div class="stat-label">Trips</div>
-      <div class="stat-value" id="statTrips">0</div>
+      <div class="stat-label">After Tax</div>
+      <div class="stat-value" id="statAfterTax">€0</div>
     </div>
   </div>
 
@@ -349,12 +355,16 @@
       <div class="fuel-track"><div class="fuel-fill" id="fuelFill" style="width:100%"></div></div>
       <div class="fuel-pct" id="fuelPct">100%</div>
     </div>
+    <div class="rating-row">
+      <div class="rating-lbl">⭐ Rating</div>
+      <div class="rating-val green" id="statRating">100%</div>
+    </div>
   </div>
 
   <!-- Action Buttons -->
   <div class="action-row">
     <button class="action-btn" id="btnRefuel" onclick="doRefuel()">
-      <span class="btn-emoji">⛽</span>Refuel €4
+      <span class="btn-emoji">⛽</span>Refuel <span id="refuelCost">€20</span>
     </button>
     <button class="action-btn" id="btnWash" onclick="doWash()">
       <span class="btn-emoji">🚿</span>Car Wash €1
@@ -507,11 +517,11 @@ const SCENARIOS = [
   { emoji:'🐕', title:'Dog appearance',      body:'A dog appeared. No explanation. The client had feelings about it.',          threeStarBoost:20, oneStarBoost:10 },
   { emoji:'💵', title:'Generous client',     body:'The client appreciated the ride. A cash tip was left.',                     tip:true },
   { emoji:'🎉', title:'City festival',       body:'High demand across the city! Your next order will be surge-priced.',        surge:true },
-  { emoji:'🔧', title:'Check engine light',  body:'Appeared mid-trip. Cannot be ignored. Workshop visit inevitable.',           cost:5 },
-  { emoji:'💥', title:'Fender bender',       body:'A slow-speed incident at a junction. The bill was not slow.',               cost:8 },
-  { emoji:'🪟', title:'Window stuck',        body:'Electric window jammed open in November. Fixed. Eventually.',               cost:3 },
-  { emoji:'🔩', title:'Flat tyre',           body:'Caught it on a kerb. Changed it yourself. Still cost you.',                 cost:6, fuelExtra:5 },
-  { emoji:'🍓', title:'Smoothie incident',   body:"Client's smoothie found the seat seam. Difficult to explain to the next passenger.", cost:2 },
+  { emoji:'🔧', title:'Check engine light',  body:'Appeared mid-trip. Cannot be ignored. Workshop visit inevitable.',           cost:10 },
+  { emoji:'💥', title:'Fender bender',       body:'A slow-speed incident at a junction. The bill was not slow.',               cost:18 },
+  { emoji:'🪟', title:'Window stuck',        body:'Electric window jammed open in November. Fixed. Eventually.',               cost:6 },
+  { emoji:'🔩', title:'Flat tyre',           body:'Caught it on a kerb. Changed it yourself. Still cost you.',                 cost:12, fuelExtra:5 },
+  { emoji:'🍓', title:'Smoothie incident',   body:"Client's smoothie found the seat seam. Difficult to explain to the next passenger.", cost:4 },
 ];
 
 // ─── STATE ──────────────────────────────────────────────────
@@ -525,12 +535,31 @@ let nextSurge  = false;
 let lastRenderRound = -1;
 let unsub = null;
 let driverTimerInterval = null;
+let orderTimerPending  = false; // true while maybeGenerateOrder is scheduled
+let orderTimeoutId     = null;  // auto-reject countdown
+let orderCountdownId   = null;  // 1-second interval for countdown display
 
 // ─── HELPERS ────────────────────────────────────────────────
 function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 function fmtEur(v) { return (v >= 0 ? '+€' : '-€') + Math.abs(v).toFixed(2); }
 function fmtBal(v) { return '€' + v.toFixed(2); }
+
+// Schedule order generation — prevents duplicate timers
+function scheduleOrderGeneration(delay) {
+  if (orderTimerPending) return;
+  orderTimerPending = true;
+  setTimeout(() => {
+    orderTimerPending = false;
+    maybeGenerateOrder();
+  }, delay);
+}
+
+// Clear auto-reject timers when order is acted on
+function clearOrderTimeout() {
+  if (orderTimeoutId)    { clearTimeout(orderTimeoutId);    orderTimeoutId    = null; }
+  if (orderCountdownId)  { clearInterval(orderCountdownId); orderCountdownId  = null; }
+}
 
 function showToast(msg, duration = 2800) {
   const t = document.getElementById('toast');
@@ -563,7 +592,10 @@ function resetToJoin() {
   lastRenderRound    = -1;
   lastSickCheckRound = 0;
   lastAppliedFeeRound = 0;
+  lastAppliedTaxRound = 0;
   if (driverTimerInterval) { clearInterval(driverTimerInterval); driverTimerInterval = null; }
+  clearOrderTimeout();
+  orderTimerPending = false;
   document.getElementById('mainScreen').style.display = 'none';
   document.getElementById('joinScreen').style.display = '';
   document.getElementById('driverNameInput').value = '';
@@ -580,13 +612,15 @@ async function initDriver(isNew = false) {
       // First join: create fresh driver document
       await setDoc(ref, {
         name: driverName,
-        balance: 50,
+        balance: 30,
         fuel: 100,
         rating: 100,
         trips: 0,
         totalEarnings: 0,
+        totalEarningsAtLastTax: 0,
         tripsSinceWash: 0,
         lastAccessFeeRound: 0,
+        lastTaxRound: 0,
         sickRound: 0,
         active: true
       });
@@ -684,11 +718,12 @@ function syncDriverTimer() {
 function render(gameSnap, driverSnap) {
   if (!gameState || !driverState) return;
 
-  const fuel    = driverState.fuel    || 0;
-  const balance = driverState.balance || 0;
-  const rating  = driverState.rating  || 100;
-  const trips   = driverState.trips   || 0;
-  const tripsSinceWash = driverState.tripsSinceWash || 0;
+  const fuel         = driverState.fuel          || 0;
+  const balance      = driverState.balance       || 0;
+  const rating       = driverState.rating        || 100;
+  const trips        = driverState.trips         || 0;
+  const tripsSinceWash  = driverState.tripsSinceWash  || 0;
+  const totalEarnings   = driverState.totalEarnings   || 0;
   const round   = gameState.round || 0;
   const status  = gameState.status || 'waiting';
 
@@ -696,22 +731,37 @@ function render(gameSnap, driverSnap) {
   document.getElementById('hdrRound').textContent = round || '—';
   syncDriverTimer();
 
-  // Stats
+  // Stats bar: Balance | Earned | After Tax
   const balEl = document.getElementById('statBalance');
   balEl.textContent = fmtBal(balance);
   balEl.className = 'stat-value ' + (balance >= 20 ? 'green' : balance >= 8 ? 'orange' : 'red');
 
+  const earnedEl = document.getElementById('statEarned');
+  earnedEl.textContent = fmtBal(totalEarnings);
+  earnedEl.className = 'stat-value green';
+
+  const afterTaxEl = document.getElementById('statAfterTax');
+  const afterTax = +(totalEarnings * 0.75).toFixed(2);
+  afterTaxEl.textContent = fmtBal(afterTax);
+  afterTaxEl.className = 'stat-value ' + (afterTax >= 20 ? 'green' : afterTax >= 8 ? 'orange' : 'red');
+
+  // Rating in fuel bar
   const ratEl = document.getElementById('statRating');
   ratEl.textContent = Math.round(rating) + '%';
-  ratEl.className = 'stat-value ' + (rating >= 80 ? 'green' : rating >= 60 ? 'orange' : 'red');
-
-  document.getElementById('statTrips').textContent = trips;
+  ratEl.className = 'rating-val ' + (rating >= 80 ? 'green' : rating >= 60 ? 'orange' : 'red');
 
   // Fuel bar
   const fuelFill = document.getElementById('fuelFill');
   fuelFill.style.width = fuel + '%';
   fuelFill.style.background = fuel > 50 ? 'var(--green)' : fuel > 25 ? 'var(--orange)' : 'var(--red)';
   document.getElementById('fuelPct').textContent = Math.round(fuel) + '%';
+
+  // Refuel cost label (€0.20 per %)
+  const refuelCostEl = document.getElementById('refuelCost');
+  if (refuelCostEl) {
+    const rc = +((100 - Math.min(fuel, 100)) * 0.20).toFixed(2);
+    refuelCostEl.textContent = '€' + rc.toFixed(2);
+  }
 
   // Refuel button glow when fuel < 30
   const btnRefuel = document.getElementById('btnRefuel');
@@ -721,14 +771,15 @@ function render(gameSnap, driverSnap) {
   const btnWash = document.getElementById('btnWash');
   btnWash.className = 'action-btn' + (tripsSinceWash >= 5 ? ' glow-green' : '');
 
-  // Debt trap check — only show during active round
-  const suspended = status === 'round_active' && balance < 4 && fuel < 30;
+  // Debt trap: can't afford enough fuel to keep working (need €5 to reach 25%)
+  const suspended = status === 'round_active' && balance < 5 && fuel < 20;
   document.getElementById('suspendedOverlay').className =
     'suspended-overlay' + (suspended ? ' active' : '');
 
-  // Round change: apply access fee + maybe go sick
+  // Round change: apply access fee, income tax + maybe go sick
   if (status === 'round_active' && round > 0) {
     maybeApplyAccessFee(round, balance);
+    maybeApplyTax(round, totalEarnings);
     maybeGoSick(round);
   }
 
@@ -747,6 +798,7 @@ function render(gameSnap, driverSnap) {
 // Local guard: prevent double-charging access fee when both onSnapshot callbacks
 // fire before Firestore has returned the updated lastAccessFeeRound value.
 let lastAppliedFeeRound = 0;
+let lastAppliedTaxRound = 0;  // same guard for income tax
 
 // 10% chance, once per game. Driver loses the round but still pays access fee.
 let lastSickCheckRound = 0;
@@ -781,6 +833,29 @@ async function maybeApplyAccessFee(round, balance) {
     await updateDoc(gameRef, { accessFeesRevenue: increment(2) });
     showToast('⚠️ Platform access fee: −€2');
   } catch(e) { console.warn('Access fee error', e); }
+}
+
+// 25% income tax on fare earnings accumulated since last tax collection
+async function maybeApplyTax(round, totalEarnings) {
+  if (lastAppliedTaxRound >= round) return;
+  lastAppliedTaxRound = round;
+  const lastTaxRound = driverState.lastTaxRound || 0;
+  if (lastTaxRound >= round) return;
+
+  const earningsAtLastTax = driverState.totalEarningsAtLastTax || 0;
+  const newEarnings = +(totalEarnings - earningsAtLastTax).toFixed(2);
+  if (newEarnings <= 0) return;
+
+  const tax = +(newEarnings * 0.25).toFixed(2);
+  const ref = doc(db, 'drivers', driverId);
+  try {
+    await updateDoc(ref, {
+      balance: increment(-tax),
+      totalEarningsAtLastTax: totalEarnings,
+      lastTaxRound: round
+    });
+    showToast(`🧾 Income tax: −€${tax.toFixed(2)} (25%)`);
+  } catch(e) { console.warn('Tax error', e); }
 }
 
 function renderMain(status, round, balance, fuel, rating, trips) {
@@ -842,8 +917,8 @@ function renderMain(status, round, balance, fuel, rating, trips) {
   }
 
   if (status === 'round_active') {
-    // Generate order with a small delay on round change
     if (round !== lastRenderRound) {
+      // New round — show "looking" and schedule first order
       lastRenderRound = round;
       c.innerHTML = `
         <div class="waiting-card">
@@ -851,7 +926,12 @@ function renderMain(status, round, balance, fuel, rating, trips) {
           <div class="waiting-title">Looking for orders…</div>
           <div class="dot-pulse"><span></span><span></span><span></span></div>
         </div>`;
-      setTimeout(maybeGenerateOrder, 800 + Math.random() * 1200);
+      scheduleOrderGeneration(800 + Math.random() * 1200);
+    } else if (!pendingOrder && !orderTimerPending) {
+      // Safety net: same round, no order showing, no timer pending — reschedule.
+      // Catches cases where maybeGenerateOrder returned early (e.g. post-refuel)
+      // and no subsequent trigger re-started the loop.
+      scheduleOrderGeneration(800 + Math.random() * 800);
     }
   }
 }
@@ -894,6 +974,8 @@ function maybeGenerateOrder() {
 
 function renderOrderCard(order) {
   if (tripState !== 'idle') return;
+  clearOrderTimeout(); // cancel any previous auto-reject timer
+
   const { scenario, distance, isSurge, isDifficult } = order;
   const c = document.getElementById('mainContent');
   const scenarioHtml = scenario ? `
@@ -930,10 +1012,66 @@ function renderOrderCard(order) {
       </div>
       <button class="order-accept" onclick="acceptOrder()">Accept Ride</button>
       <button class="order-skip" onclick="skipOrder()">Skip</button>
+      <div style="text-align:center;font-size:12px;color:var(--muted);margin-top:-4px">
+        Order expires in <span id="orderCountdown" style="font-family:var(--mono);color:var(--dim)">20s</span>
+      </div>
     </div>`;
+
+  // 20-second auto-reject countdown
+  let secondsLeft = 20;
+  orderCountdownId = setInterval(() => {
+    secondsLeft--;
+    const el = document.getElementById('orderCountdown');
+    if (el) {
+      el.textContent = secondsLeft + 's';
+      if (secondsLeft <= 5) el.style.color = 'var(--red)';
+      else if (secondsLeft <= 10) el.style.color = 'var(--orange)';
+    }
+    if (secondsLeft <= 0) { clearInterval(orderCountdownId); orderCountdownId = null; }
+  }, 1000);
+
+  orderTimeoutId = setTimeout(autoRejectOrder, 20000);
+}
+
+// Auto-reject when 20s expires
+async function autoRejectOrder() {
+  orderTimeoutId = null;
+  clearOrderTimeout();
+  if (tripState !== 'idle' || !pendingOrder) return;
+
+  const ratingHit = -rand(1, 3);
+  const newRating = Math.max(0, (driverState.rating || 100) + ratingHit);
+  pendingOrder = null;
+
+  showToast(`⏱️ Order expired · Rating ${ratingHit}%`);
+
+  // Firestore: small rating penalty
+  const ref = doc(db, 'drivers', driverId);
+  updateDoc(ref, { rating: +newRating.toFixed(1) }).catch(e => console.warn('Auto-reject update failed', e));
+
+  const currentStatus = (gameState && gameState.status) || '';
+  if (currentStatus !== 'round_active') {
+    renderMain(currentStatus,
+      (gameState && gameState.round)       || 0,
+      (driverState && driverState.balance) || 0,
+      (driverState && driverState.fuel)    || 0,
+      (driverState && driverState.rating)  || 100,
+      (driverState && driverState.trips)   || 0);
+    return;
+  }
+
+  const c = document.getElementById('mainContent');
+  c.innerHTML = `
+    <div class="waiting-card">
+      <div class="waiting-emoji">🔄</div>
+      <div class="waiting-title">Looking for another order…</div>
+      <div class="dot-pulse"><span></span><span></span><span></span></div>
+    </div>`;
+  scheduleOrderGeneration(2000 + Math.random() * 2000); // longer pause after auto-reject
 }
 
 window.skipOrder = function() {
+  clearOrderTimeout();
   pendingOrder = null;
   lastRenderRound = -1;
 
@@ -957,13 +1095,14 @@ window.skipOrder = function() {
       <div class="waiting-title">Looking for another order…</div>
       <div class="dot-pulse"><span></span><span></span><span></span></div>
     </div>`;
-  setTimeout(maybeGenerateOrder, 1000 + Math.random() * 1500);
+  scheduleOrderGeneration(1000 + Math.random() * 1500);
 };
 
 // ─── ACCEPT & RIDE ──────────────────────────────────────────
 window.acceptOrder = function() {
   if (!pendingOrder || tripState !== 'idle') return;
   if (!gameState || gameState.status !== 'round_active') return; // round ended mid-display
+  clearOrderTimeout();
   tripState = 'riding';
 
   const { scenario, distance, isDifficult } = pendingOrder;
@@ -1243,18 +1382,27 @@ window.dismissResults = function() {
       <div class="waiting-title">Looking for orders…</div>
       <div class="dot-pulse"><span></span><span></span><span></span></div>
     </div>`;
-  setTimeout(maybeGenerateOrder, 600 + Math.random() * 800);
+  scheduleOrderGeneration(600 + Math.random() * 800);
 };
 
 // ─── REFUEL ─────────────────────────────────────────────────
+// Full tank costs €20; proportional: (100 - fuel%) × €0.20
 window.doRefuel = async function() {
   const balance = driverState.balance || 0;
   const fuel    = driverState.fuel    || 0;
-  if (balance < 4) { showToast('Not enough balance to refuel (€4)'); return; }
-  if (fuel >= 95)  { showToast('Fuel already full'); return; }
+  if (fuel >= 95) { showToast('Fuel already full'); return; }
+  const cost = +((100 - Math.min(fuel, 100)) * 0.20).toFixed(2);
+  if (balance < cost) {
+    showToast(`Not enough balance (need €${cost.toFixed(2)})`);
+    return;
+  }
   const ref = doc(db, 'drivers', driverId);
-  await updateDoc(ref, { balance: increment(-4), fuel: 100 });
-  showToast('⛽ Refuelled! −€4');
+  await updateDoc(ref, { balance: increment(-cost), fuel: 100 });
+  showToast(`⛽ Full tank! −€${cost.toFixed(2)}`);
+  // If stuck on "Looking for orders" with no pending timer, kick-start order generation
+  if (gameState && gameState.status === 'round_active' && tripState === 'idle' && !pendingOrder) {
+    scheduleOrderGeneration(500);
+  }
 };
 
 // ─── CAR WASH ───────────────────────────────────────────────

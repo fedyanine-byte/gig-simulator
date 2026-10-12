@@ -243,6 +243,8 @@
     animation: slideUp .3s ease-out;
   }
   .results-header { font-size: 16px; font-weight: 600; margin-bottom: 14px; text-align: center; }
+  .scenario-note { font-size: 12px; color: var(--dim); padding: 10px 12px; background: var(--surface2); border-radius: 8px; border-left: 3px solid var(--orange); margin-bottom: 12px; line-height: 1.5; }
+  .scenario-note strong { color: var(--text); font-size: 13px; }
   .result-row {
     display: flex; justify-content: space-between; align-items: center;
     padding: 9px 0; border-bottom: 1px solid var(--border);
@@ -896,17 +898,18 @@ function renderMain(status, round, balance, fuel, rating, trips) {
   }
 
   // Sick day — driver can't work this round (but access fee already deducted)
+  // NOTE: always re-render the sick card — sickRound may have been set AFTER the
+  // round's first render (lastRenderRound already equals round), so we cannot use
+  // the lastRenderRound guard here or the sick screen never appears reactively.
   const sickRound = driverState.sickRound || 0;
   if (sickRound === round && status === 'round_active') {
-    if (round !== lastRenderRound) {
-      lastRenderRound = round;
-      c.innerHTML = `
-        <div class="waiting-card">
-          <div class="waiting-emoji">🤒</div>
-          <div class="waiting-title">You're sick today</div>
-          <div class="waiting-sub">Can't take orders this round.<br>Platform fee was still charged.</div>
-        </div>`;
-    }
+    lastRenderRound = round; // prevent the normal "Looking for orders" path below
+    c.innerHTML = `
+      <div class="waiting-card">
+        <div class="waiting-emoji">🤒</div>
+        <div class="waiting-title">You're sick today</div>
+        <div class="waiting-sub">Can't take orders this round.<br>Platform fee was still charged.</div>
+      </div>`;
     return;
   }
 
@@ -978,10 +981,7 @@ function renderOrderCard(order) {
 
   const { scenario, distance, isSurge, isDifficult } = order;
   const c = document.getElementById('mainContent');
-  const scenarioHtml = scenario ? `
-    <div class="order-difficult">
-      <strong>${scenario.emoji} ${scenario.title}:</strong> ${scenario.body}
-    </div>` : '';
+  // Scenario is intentionally NOT shown on the order card — revealed postfactum in results
   const difficultHtml = isDifficult ? `
     <div class="order-difficult" style="border-left-color:var(--red)">
       ⚠️ Note: Customer has specific preferences. Proceed carefully.
@@ -997,7 +997,6 @@ function renderOrderCard(order) {
           <div class="order-scenario">Client is waiting</div>
         </div>
       </div>
-      ${scenarioHtml}
       ${difficultHtml}
       <div class="order-meta">
         <div class="order-meta-item">
@@ -1295,9 +1294,16 @@ async function completeTrip(scenario, isDifficult) {
       <div class="result-value ${r.cls}">${r.value}</div>
     </div>`).join('');
 
+  const scenarioNoteHtml = scenario ? `
+    <div class="scenario-note">
+      <strong>${scenario.emoji} ${scenario.title}</strong><br>
+      ${scenario.body}
+    </div>` : '';
+
   c.innerHTML = `
     <div class="results-card">
       <div class="results-header">Trip Complete</div>
+      ${scenarioNoteHtml}
       ${rowsHtml}
       <button class="results-dismiss" id="dismissBtn" onclick="dismissResults()">Next order →</button>
     </div>`;

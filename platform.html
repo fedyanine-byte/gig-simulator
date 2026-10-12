@@ -471,7 +471,7 @@
 
 <!-- TIMER -->
 <div class="timer-bar">
-  <div class="timer-display" id="timerDisplay">3:00</div>
+  <div class="timer-display" id="timerDisplay">2:00</div>
 </div>
 
 <!-- CONTROLS -->
@@ -749,7 +749,7 @@ function startTimerDisplay() {
   if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
 
   if (gameState.status !== 'round_active' || !gameState.timerEnd) {
-    document.getElementById('timerDisplay').textContent = '3:00';
+    document.getElementById('timerDisplay').textContent = '2:00';
     document.getElementById('timerDisplay').className = 'timer-display';
     return;
   }

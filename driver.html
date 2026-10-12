@@ -1081,6 +1081,12 @@ window.skipOrder = function() {
   pendingOrder = null;
   lastRenderRound = -1;
 
+  // -1% rating for deliberate decline
+  const newRating = Math.max(0, +((driverState.rating || 100) - 1).toFixed(1));
+  updateDoc(doc(db, 'drivers', driverId), { rating: newRating })
+    .catch(e => console.warn('Skip rating update failed', e));
+  showToast('❌ Order declined · Rating −1%');
+
   const currentStatus = (gameState && gameState.status) || '';
   if (currentStatus !== 'round_active') {
     renderMain(

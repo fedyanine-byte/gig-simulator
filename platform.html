@@ -568,6 +568,7 @@
             <th>Balance</th>
             <th>Fuel</th>
             <th>Orders</th>
+            <th>Net</th>
             <th>Status</th>
           </tr>
         </thead>
@@ -814,7 +815,7 @@ function renderDrivers() {
   const drivers = Object.values(driversData).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
   if (drivers.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" class="empty-drivers">No drivers connected yet.<br>Students open driver.html on their phones.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="empty-drivers">No drivers connected yet.<br>Students open driver.html on their phones.</td></tr>`;
     return;
   }
 
@@ -846,7 +847,8 @@ function renderDrivers() {
           <span class="num" style="color:var(--${fuelColor})">${fuel}%</span>
         </div>
       </td>
-      <td class="num">${d.ordersCompleted || 0}</td>
+      <td class="num">${d.trips || 0}</td>
+      <td class="num" style="color:var(--${(balance - 30) >= 0 ? 'green' : 'red'})">${(balance - 30) >= 0 ? '+' : ''}€${(balance - 30).toFixed(2)}</td>
       <td><span class="status-pill ${statusClass}">${statusLabel}</span></td>
     </tr>`;
   }).join('');

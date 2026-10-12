@@ -547,6 +547,13 @@ function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 function fmtEur(v) { return (v >= 0 ? '+€' : '-€') + Math.abs(v).toFixed(2); }
 function fmtBal(v) { return '€' + v.toFixed(2); }
 
+// Add 1 second of wait per 10% rating below 100
+function ratingDelay(baseMs) {
+  const rating = (driverState && driverState.rating) || 100;
+  const penaltyMs = Math.floor((100 - rating) / 10) * 1000;
+  return baseMs + penaltyMs;
+}
+
 // Schedule order generation — prevents duplicate timers
 function scheduleOrderGeneration(delay) {
   if (orderTimerPending) return;
@@ -929,12 +936,12 @@ function renderMain(status, round, balance, fuel, rating, trips) {
           <div class="waiting-title">Looking for orders…</div>
           <div class="dot-pulse"><span></span><span></span><span></span></div>
         </div>`;
-      scheduleOrderGeneration(800 + Math.random() * 1200);
+      scheduleOrderGeneration(ratingDelay(800 + Math.random() * 1200));
     } else if (!pendingOrder && !orderTimerPending) {
       // Safety net: same round, no order showing, no timer pending — reschedule.
       // Catches cases where maybeGenerateOrder returned early (e.g. post-refuel)
       // and no subsequent trigger re-started the loop.
-      scheduleOrderGeneration(800 + Math.random() * 800);
+      scheduleOrderGeneration(ratingDelay(800 + Math.random() * 800));
     }
   }
 }
@@ -1066,7 +1073,7 @@ async function autoRejectOrder() {
       <div class="waiting-title">Looking for another order…</div>
       <div class="dot-pulse"><span></span><span></span><span></span></div>
     </div>`;
-  scheduleOrderGeneration(2000 + Math.random() * 2000); // longer pause after auto-reject
+  scheduleOrderGeneration(ratingDelay(2000 + Math.random() * 2000)); // longer pause after auto-reject
 }
 
 window.skipOrder = function() {
@@ -1094,7 +1101,7 @@ window.skipOrder = function() {
       <div class="waiting-title">Looking for another order…</div>
       <div class="dot-pulse"><span></span><span></span><span></span></div>
     </div>`;
-  scheduleOrderGeneration(1000 + Math.random() * 1500);
+  scheduleOrderGeneration(ratingDelay(1000 + Math.random() * 1500));
 };
 
 // ─── ACCEPT & RIDE ──────────────────────────────────────────
@@ -1388,7 +1395,7 @@ window.dismissResults = function() {
       <div class="waiting-title">Looking for orders…</div>
       <div class="dot-pulse"><span></span><span></span><span></span></div>
     </div>`;
-  scheduleOrderGeneration(600 + Math.random() * 800);
+  scheduleOrderGeneration(ratingDelay(600 + Math.random() * 800));
 };
 
 // ─── REFUEL ─────────────────────────────────────────────────
